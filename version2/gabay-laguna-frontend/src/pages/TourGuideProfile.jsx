@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaPhone, FaGlobe, FaEdit, FaSave, FaTimes, FaCamera, FaMapMarkerAlt, FaCalendarAlt, FaStar, FaCertificate, FaLanguage, FaCar, FaClock, FaDollarSign, FaCheckCircle } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaEdit, FaSave, FaTimes, FaCamera, FaMapMarkerAlt, FaCalendarAlt, FaStar, FaCertificate, FaLanguage, FaCar, FaClock, FaDollarSign, FaCheckCircle } from 'react-icons/fa';
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const TourGuideProfile = () => {
@@ -395,50 +395,6 @@ const TourGuideProfile = () => {
             </div>
           </div>
 
-          {/* Recent Reviews */}
-          <div className="card border-0 shadow-sm mb-4">
-            <div className="card-header bg-transparent">
-              <h6 className="mb-0 text-primary">Recent Reviews</h6>
-            </div>
-            <div className="card-body">
-              <div className="d-flex align-items-start mb-3">
-                <div className="bg-warning rounded-circle p-2 me-3">
-                  <FaStar size={12} className="text-white" />
-                </div>
-                <div>
-                  <div className="d-flex align-items-center mb-1">
-                    <span className="fw-bold me-2">Maria S.</span>
-                    <small className="text-muted">5.0 ⭐</small>
-                  </div>
-                  <p className="mb-0 small">"Excellent tour of Rizal Shrine. Very knowledgeable guide!"</p>
-                </div>
-              </div>
-              <div className="d-flex align-items-start mb-3">
-                <div className="bg-warning rounded-circle p-2 me-3">
-                  <FaStar size={12} className="text-white" />
-                </div>
-                <div>
-                  <div className="d-flex align-items-center mb-1">
-                    <span className="fw-bold me-2">John D.</span>
-                    <small className="text-muted">4.8 ⭐</small>
-                  </div>
-                  <p className="mb-0 small">"Great experience exploring Calamba's historical sites."</p>
-                </div>
-              </div>
-              <div className="d-flex align-items-start">
-                <div className="bg-warning rounded-circle p-2 me-3">
-                  <FaStar size={12} className="text-white" />
-                </div>
-                <div>
-                  <div className="d-flex align-items-center mb-1">
-                    <span className="fw-bold me-2">Ana L.</span>
-                    <small className="text-muted">5.0 ⭐</small>
-                  </div>
-                  <p className="mb-0 small">"Amazing tour guide! Highly recommended."</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Quick Actions */}
           <div className="card border-0 shadow-sm">

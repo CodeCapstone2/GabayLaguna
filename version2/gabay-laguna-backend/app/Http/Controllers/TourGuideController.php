@@ -90,9 +90,6 @@ class TourGuideController extends Controller
         ]);
     }
 
-    /**
-     * Get guide availability
-     */
     public function getAvailability(Request $request)
     {
         $guide = $request->user()->tourGuide;
@@ -149,9 +146,6 @@ class TourGuideController extends Controller
         ], 201);
     }
 
-    /**
-     * Update guide availability
-     */
     public function updateAvailability(Request $request, string $id)
     {
         $guide = $request->user()->tourGuide;

@@ -21,16 +21,17 @@ class AdminController extends Controller
     public function dashboard()
     {
         $stats = [
-            'total_users' => User::count(),
-            'total_tourists' => User::where('user_type', 'tourist')->count(),
-            'total_guides' => User::where('user_type', 'guide')->count(),
-            'pending_verifications' => TourGuide::where('is_verified', false)->count(),
-            'total_bookings' => Booking::count(),
-            'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
-            'total_cities' => City::count(),
-            'total_categories' => Category::count(),
-            'total_pois' => PointOfInterest::count(),
-        ];
+                'total_users' => User::count(),
+                'total_tourists' => User::where('user_type', 'tourist')->count(),
+                'total_guides' => User::where('user_type', 'guide')->count(),
+                'pending_verifications' => TourGuide::where('is_verified', false)->count(),
+                'pending_location_applications' => LocationApplication::where('status', 'pending')->count(), // Add this line
+                'total_bookings' => Booking::count(),
+                'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
+                'total_cities' => City::count(),
+                'total_categories' => Category::count(),
+                'total_pois' => PointOfInterest::count(),
+            ];
 
         $recentBookings = Booking::with(['tourist', 'tourGuide.user'])
             ->orderBy('created_at', 'desc')

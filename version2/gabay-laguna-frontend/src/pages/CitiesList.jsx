@@ -2,55 +2,127 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-const cities = [
-  {
-    name: 'San Pedro',
-    image: '/assets/SanPedroCity.jpg',
-    description: 'Known as the Sampaguita Capital of the Philippines, it is the first city encountered when traveling to Laguna from Manila.',
-  },
-  {
-    name: 'Biñan',
-    image: '/assets/BinanCity.jpg',
-    description: 'The largest city in Laguna, known for its industrial and recreational places, including Splash Island.',
-  },
-  {
-    name: 'Santa Rosa',
-    image: '/assets/StaRosaCity.jpg',
-    description: 'A city known for its residential and commercial development, often considered a suburban community of Metro Manila.',
-  },
-  {
-    name: 'Cabuyao',
-    image: '/assets/CabuyaoCity.jpg',
-    description: 'An urbanized city known as the Enterprise City of the Philippines, named after the Citrus macroptera tree.',
-  },
-  {
-    name: 'Calamba',
-    image: '/assets/CalambaCity.jpg',
-    description: 'Known as the "Spring Resort Capital of the Philippines" due to its many hot spring resorts.',
-  },
-  {
-    name: 'San Pablo',
-    image: '/assets/SanPabloCity.svg.png',
-    description: 'Known as the "City of Seven Lakes," it features beautiful natural attractions.',
-  },
-];
-
 const CitiesList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [cities, setCities] = useState([]);
+  const [pois, setPois] = useState([]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timeout);
+    fetchCities();
+    fetchPois();
   }, []);
+
+const fetchCities = async () => {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/cities');
+    const data = await response.json();
+    
+    console.log('Cities API Response:', data); // Debug log
+    
+    let citiesData = [];
+    
+    if (Array.isArray(data)) {
+      citiesData = data;
+    } else if (data.cities) {
+      citiesData = Array.isArray(data.cities) ? data.cities : (data.cities.data || []);
+    } else if (data.data) {
+      citiesData = Array.isArray(data.data) ? data.data : [];
+    } else {
+      citiesData = Object.values(data).find(Array.isArray) || [];
+    }
+    
+    setCities(citiesData);
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+      // Fallback to sample data if API fails
+      setCities([
+        {
+          id: 1,
+          name: 'San Pedro',
+          image: '/assets/SanPedroCity.jpg',
+          description: 'Known as the Sampaguita Capital of the Philippines',
+        },
+        {
+          id: 2,
+          name: 'Biñan',
+          image: '/assets/BinanCity.jpg',
+          description: 'The largest city in Laguna',
+        },
+        {
+          id: 3,
+          name: 'Santa Rosa',
+          image: '/assets/StaRosaCity.jpg',
+          description: 'Known for residential and commercial development',
+        },
+        {
+          id: 4,
+          name: 'Cabuyao',
+          image: '/assets/CabuyaoCity.jpg',
+          description: 'Enterprise City of the Philippines',
+        },
+        {
+          id: 5,
+          name: 'Calamba',
+          image: '/assets/CalambaCity.jpg',
+          description: 'Spring Resort Capital of the Philippines',
+        },
+        {
+          id: 6,
+          name: 'San Pablo',
+          image: '/assets/SanPabloCity.svg.png',
+          description: 'City of Seven Lakes',
+        },
+      ]);
+    }
+  };
+
+  const fetchPois = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/pois');
+      const data = await response.json();
+      
+      // Handle different response formats
+      let poisData = [];
+      if (data.points_of_interest) {
+        poisData = data.points_of_interest.data || data.points_of_interest;
+      } else if (data.data) {
+        poisData = data.data;
+      } else {
+        poisData = data;
+      }
+      
+      setPois(poisData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching POIs:', error);
+      setLoading(false);
+    }
+  };
+
+  const getPoisForCity = (cityId) => {
+    return pois.filter(poi => poi.city_id === cityId).slice(0, 3); // Show max 3 POIs per city
+  };
+
+  const getPoiImage = (poi) => {
+    // Use actual image from API if available, otherwise fallback
+    return poi.images && poi.images.length > 0 
+      ? poi.images[0] 
+      : '/assets/default-poi.jpg';
+  };
 
   const filteredCities = cities.filter(city =>
     city.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleCityClick = (city) => {
-    navigate(`/categories/${city.toLowerCase().replace(/\s+/g, '-')}`);
+    navigate(`/city/${city.id}/pois`, { state: { city } });
+  };
+
+  const handlePoiClick = (poi, e) => {
+    e.stopPropagation(); // Prevent city card click
+    navigate(`/poi/${poi.id}`, { state: { poi } });
   };
 
   const handleBack = () => {
@@ -95,7 +167,10 @@ const CitiesList = () => {
                   <div className="card-body">
                     <h5 className="card-title placeholder col-6"></h5>
                     <p className="card-text placeholder col-8"></p>
-                    <p className="card-text placeholder col-10"></p>
+                    <div className="mb-2">
+                      <span className="placeholder col-4 me-2"></span>
+                      <span className="placeholder col-3"></span>
+                    </div>
                     <button className="btn btn-outline-secondary disabled placeholder col-5"></button>
                   </div>
                 </div>
@@ -103,31 +178,60 @@ const CitiesList = () => {
             ))
           ) : (
             filteredCities.length > 0 ? (
-              filteredCities.map((city) => (
-                <div key={city.name} className="col-sm-12 col-md-6 col-lg-4">
-                  <div
-                    className="card h-100 shadow-sm border-0 transition"
-                    role="button"
-                    onClick={() => handleCityClick(city.name)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <img
-                      src={city.image}
-                      className="card-img-top rounded-top"
-                      alt={`Image of ${city.name}`}
-                      loading="lazy"
-                      style={{ height: '220px', objectFit: 'cover' }}
-                    />
-                    <div className="card-body d-flex flex-column">
-                      <h5 className="card-title fw-semibold text-success">{city.name}</h5>
-                      <p className="card-text text-muted small flex-grow-1">{city.description}</p>
-                      <button className="btn btn-outline-success mt-3 align-self-start">
-                        Discover {city.name}
-                      </button>
+              filteredCities.map((city) => {
+                const cityPois = getPoisForCity(city.id);
+                return (
+                  <div key={city.id} className="col-sm-12 col-md-6 col-lg-4">
+                    <div
+                      className="card h-100 shadow-sm border-0 transition"
+                      role="button"
+                      onClick={() => handleCityClick(city)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <img
+                        src={city.image || '/assets/default-city.jpg'}
+                        className="card-img-top rounded-top"
+                        alt={`Image of ${city.name}`}
+                        loading="lazy"
+                        style={{ height: '200px', objectFit: 'cover' }}
+                        onError={(e) => {
+                          e.target.src = '/assets/default-city.jpg';
+                        }}
+                      />
+                      <div className="card-body d-flex flex-column">
+                        <h5 className="card-title fw-semibold text-success">{city.name}</h5>
+                        <p className="card-text text-muted small flex-grow-1">
+                          {city.description || 'Explore beautiful destinations and attractions'}
+                        </p>
+                        
+                        {/* POIs Section */}
+                        {cityPois.length > 0 && (
+                          <div className="mb-3">
+                            <h6 className="text-muted mb-2">🏛️ Popular Attractions:</h6>
+                            <div className="d-flex flex-wrap gap-2">
+                              {cityPois.map(poi => (
+                                <span
+                                  key={poi.id}
+                                  className="badge bg-light text-dark border"
+                                  style={{ cursor: 'pointer', fontSize: '0.8rem' }}
+                                  onClick={(e) => handlePoiClick(poi, e)}
+                                  title={poi.description}
+                                >
+                                  {poi.name}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <button className="btn btn-outline-success mt-auto align-self-start">
+                          Discover {city.name}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div className="col-12 text-center text-muted">
                 <p>No cities found matching "<strong>{searchTerm}</strong>"</p>

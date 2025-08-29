@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -146,8 +147,9 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
+        $user = $request->user()->load('tourGuide');
         return response()->json([
-            'user' => $request->user()
+            'user' => $user
         ]);
     }
 
@@ -172,8 +174,9 @@ class AuthController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
+            'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'phone' => 'sometimes|nullable|string|max:20',
-            'profile_picture' => 'sometimes|nullable|string',
+            'profile_picture' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -183,7 +186,29 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $user->update($request->only(['name', 'phone', 'profile_picture']));
+        $userData = $request->only(['name', 'email', 'phone']);
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            // Delete old profile picture if exists
+            if ($user->profile_picture) {
+                $oldImagePath = str_replace('/storage', 'public', $user->profile_picture);
+                if (Storage::exists($oldImagePath)) {
+                    Storage::delete($oldImagePath);
+                }
+            }
+
+            $image = $request->file('profile_picture');
+            $imageName = time() . '_' . $user->id . '.' . $image->getClientOriginalExtension();
+            $imagePath = $image->storeAs('public/profile_pictures', $imageName);
+            
+            $userData['profile_picture'] = Storage::url($imagePath);
+        }
+
+        $user->update($userData);
+
+        // Reload the user with tour guide relationship
+        $user->load('tourGuide');
 
         return response()->json([
             'message' => 'Profile updated successfully',

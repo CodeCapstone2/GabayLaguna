@@ -1,29 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const BookingPage = () => {
   const { guideId, poiId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get data from navigation state if available
+  const { poi: navPoi, city: navCity, guide: navGuide } = location.state || {};
+
 
   const [booking, setBooking] = useState({
-    guide_id: guideId,
-    poi_id: poiId,
-    date: "",
+    tour_guide_id: guideId || navGuide?.id || "",
+    point_of_interest_id: poiId || navPoi?.id || "",
+    tour_date: "",
     start_time: "",
-    duration: 2,
-    participants: 1,
+    end_time: "",
+    duration_hours: 2,
+    number_of_people: 1,
     special_requests: "",
-    payment_method: "paypal",
   });
 
-  const [guide, setGuide] = useState(null);
-  const [poi, setPoi] = useState(null);
+  const [guide, setGuide] = useState(navGuide || null);
+  const [poi, setPoi] = useState(navPoi || null);
+  const [city, setCity] = useState(navCity || null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
+  const [timeSlots, setTimeSlots] = useState([]);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -40,49 +47,82 @@ const BookingPage = () => {
       return;
     }
 
-    // Load guide and POI data
     loadBookingData();
   }, [guideId, poiId, navigate]);
+
+  useEffect(() => {
+    if (booking.start_time && booking.duration_hours) {
+      const startTime = new Date(`2000-01-01T${booking.start_time}`);
+      const endTime = new Date(startTime.getTime() + booking.duration_hours * 60 * 60 * 1000);
+      const endTimeStr = endTime.toTimeString().slice(0, 5);
+      setBooking(prev => ({ ...prev, end_time: endTimeStr }));
+    }
+  }, [booking.start_time, booking.duration_hours]);
 
   const loadBookingData = async () => {
     try {
       setLoading(true);
 
-      // Load guide data
-      if (guideId) {
-        const guideResponse = await axios.get(
-          `http://127.0.0.1:8000/api/guides/${guideId}`
-        );
-        setGuide(guideResponse.data);
+      // Load guide data from URL parameter if provided
+      if (guideId && !guide) {
+        try {
+          const guideResponse = await axios.get(
+            `http://127.0.0.1:8000/api/guides/${guideId}`
+          );
+          setGuide(guideResponse.data.tour_guide || guideResponse.data);
+        } catch (error) {
+          console.error("Error loading guide:", error);
+        }
       }
 
-      // Load POI data
-      if (poiId) {
-        const poiResponse = await axios.get(
-          `http://127.0.0.1:8000/api/pois/${poiId}`
-        );
-        setPoi(poiResponse.data);
+      // Load POI data from URL parameter if provided
+      if (poiId && !poi) {
+        try {
+          const poiResponse = await axios.get(
+            `http://127.0.0.1:8000/api/pois/${poiId}`
+          );
+          setPoi(poiResponse.data.point_of_interest || poiResponse.data);
+        } catch (error) {
+          console.error("Error loading POI:", error);
+        }
       }
+
+
+      // Load available time slots for the guide
+      if (guideId || booking.tour_guide_id) {
+        await loadAvailableTimeSlots();
+      }
+
     } catch (error) {
       console.error("Error loading booking data:", error);
-      alert("Error loading booking information. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvailableTimeSlots = async () => {
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/guides/${guideId || booking.tour_guide_id}/availability`
+      );
+      setTimeSlots(response.data || []);
+    } catch (error) {
+      console.error("Error loading time slots:", error);
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!booking.date) {
-      newErrors.date = "Date is required";
+    if (!booking.tour_date) {
+      newErrors.tour_date = "Date is required";
     } else {
-      const selectedDate = new Date(booking.date);
+      const selectedDate = new Date(booking.tour_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
       if (selectedDate < today) {
-        newErrors.date = "Date cannot be in the past";
+        newErrors.tour_date = "Date cannot be in the past";
       }
     }
 
@@ -90,12 +130,20 @@ const BookingPage = () => {
       newErrors.start_time = "Start time is required";
     }
 
-    if (booking.participants < 1) {
-      newErrors.participants = "At least 1 participant is required";
+    if (!booking.tour_guide_id) {
+      newErrors.tour_guide_id = "Please select a guide";
     }
 
-    if (booking.participants > 20) {
-      newErrors.participants = "Maximum 20 participants allowed";
+    if (!booking.point_of_interest_id) {
+      newErrors.point_of_interest_id = "Please select a destination";
+    }
+
+    if (booking.number_of_people < 1) {
+      newErrors.number_of_people = "At least 1 participant is required";
+    }
+
+    if (booking.number_of_people > 20) {
+      newErrors.number_of_people = "Maximum 20 participants allowed";
     }
 
     setErrors(newErrors);
@@ -105,7 +153,7 @@ const BookingPage = () => {
   const calculateTotalPrice = () => {
     if (!guide) return 0;
     const basePrice = guide.hourly_rate || 500;
-    return basePrice * booking.duration * booking.participants;
+    return basePrice * booking.duration_hours;
   };
 
   const handleSubmit = async (e) => {
@@ -121,7 +169,6 @@ const BookingPage = () => {
       const bookingData = {
         ...booking,
         total_amount: calculateTotalPrice(),
-        tourist_id: user.id,
       };
 
       const response = await axios.post(
@@ -136,11 +183,9 @@ const BookingPage = () => {
         }
       );
 
-      if (response.data.success) {
-        alert(
-          "🎉 Booking created successfully! You will receive a confirmation email shortly."
-        );
-        navigate("/tourist-dashboard");
+      if (response.data) {
+        alert("🎉 Booking created successfully! You will receive a confirmation email shortly.");
+        navigate("/my-bookings");
       } else {
         alert("Booking failed. Please try again.");
       }
@@ -168,6 +213,22 @@ const BookingPage = () => {
         [name]: "",
       }));
     }
+  };
+
+  const handleGuideSelect = (selectedGuide) => {
+    setGuide(selectedGuide);
+    setBooking(prev => ({
+      ...prev,
+      tour_guide_id: selectedGuide.id
+    }));
+  };
+
+  const handlePoiSelect = (selectedPoi) => {
+    setPoi(selectedPoi);
+    setBooking(prev => ({
+      ...prev,
+      point_of_interest_id: selectedPoi.id
+    }));
   };
 
   if (loading) {
@@ -199,38 +260,63 @@ const BookingPage = () => {
             </div>
             <div className="card-body p-4">
               <form onSubmit={handleSubmit}>
+                {/* Guide Selection */}
+                {!guide && (
+                  <div className="mb-4">
+                    <label className="form-label">👤 Select a Guide</label>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary w-100"
+                      onClick={() => navigate(`/poi/${poi?.id}/guides`)}
+                    >
+                      Browse Available Guides
+                    </button>
+                    {errors.tour_guide_id && (
+                      <div className="text-danger small">{errors.tour_guide_id}</div>
+                    )}
+                  </div>
+                )}
+
                 {/* Guide Information */}
                 {guide && (
                   <div className="mb-4 p-3 bg-light rounded">
-                    <h5>👤 Tour Guide</h5>
-                    <div className="row">
-                      <div className="col-md-3">
-                        <img
-                          src={
-                            guide.profile_picture ||
-                            "/assets/guides/default.jpg"
-                          }
-                          alt={guide.name}
-                          className="img-fluid rounded"
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                            objectFit: "cover",
-                          }}
-                        />
+                    <div className="d-flex justify-content-between align-items-start">
+                      <div>
+                        <h5>👤 Selected Guide</h5>
+                        <div className="row">
+                          <div className="col-md-3">
+                            <img
+                              src={guide.user?.profile_picture || "/assets/guides/default.jpg"}
+                              alt={guide.user?.name}
+                              className="img-fluid rounded"
+                              style={{
+                                width: "100px",
+                                height: "100px",
+                                objectFit: "cover",
+                              }}
+                            />
+                          </div>
+                          <div className="col-md-9">
+                            <h6>{guide.user?.name}</h6>
+                            <p className="text-muted mb-1">
+                              ⭐ {guide.rating || 4.5} / 5
+                            </p>
+                            <p className="text-muted mb-1">
+                              💵 PHP {guide.hourly_rate || 500} per hour
+                            </p>
+                            <p className="text-muted mb-0">
+                              {guide.bio || "Experienced tour guide"}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                      <div className="col-md-9">
-                        <h6>{guide.name}</h6>
-                        <p className="text-muted mb-1">
-                          ⭐ {guide.rating || 4.5} / 5
-                        </p>
-                        <p className="text-muted mb-1">
-                          💵 PHP {guide.hourly_rate || 500} per hour
-                        </p>
-                        <p className="text-muted mb-0">
-                          {guide.bio || "Experienced tour guide"}
-                        </p>
-                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setGuide(null)}
+                      >
+                        Change
+                      </button>
                     </div>
                   </div>
                 )}
@@ -238,31 +324,35 @@ const BookingPage = () => {
                 {/* POI Information */}
                 {poi && (
                   <div className="mb-4 p-3 bg-light rounded">
-                    <h5>📍 Destination</h5>
+                    <h5>📍 Selected Destination</h5>
                     <h6>{poi.name}</h6>
                     <p className="text-muted mb-0">{poi.description}</p>
+                    {poi.address && (
+                      <p className="text-muted small">
+                        <i className="fas fa-map-marker-alt me-1"></i>
+                        {poi.address}
+                      </p>
+                    )}
                   </div>
                 )}
 
                 {/* Date and Time */}
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <label htmlFor="date" className="form-label">
+                    <label htmlFor="tour_date" className="form-label">
                       📅 Date
                     </label>
                     <input
                       type="date"
-                      className={`form-control ${
-                        errors.date ? "is-invalid" : ""
-                      }`}
-                      id="date"
-                      name="date"
-                      value={booking.date}
+                      className={`form-control ${errors.tour_date ? "is-invalid" : ""}`}
+                      id="tour_date"
+                      name="tour_date"
+                      value={booking.tour_date}
                       onChange={handleChange}
                       min={new Date().toISOString().split("T")[0]}
                     />
-                    {errors.date && (
-                      <div className="invalid-feedback">{errors.date}</div>
+                    {errors.tour_date && (
+                      <div className="invalid-feedback">{errors.tour_date}</div>
                     )}
                   </div>
                   <div className="col-md-6">
@@ -271,9 +361,7 @@ const BookingPage = () => {
                     </label>
                     <input
                       type="time"
-                      className={`form-control ${
-                        errors.start_time ? "is-invalid" : ""
-                      }`}
+                      className={`form-control ${errors.start_time ? "is-invalid" : ""}`}
                       id="start_time"
                       name="start_time"
                       value={booking.start_time}
@@ -290,14 +378,14 @@ const BookingPage = () => {
                 {/* Duration and Participants */}
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <label htmlFor="duration" className="form-label">
+                    <label htmlFor="duration_hours" className="form-label">
                       ⏱️ Duration (hours)
                     </label>
                     <select
                       className="form-select"
-                      id="duration"
-                      name="duration"
-                      value={booking.duration}
+                      id="duration_hours"
+                      name="duration_hours"
+                      value={booking.duration_hours}
                       onChange={handleChange}
                     >
                       <option value={1}>1 hour</option>
@@ -306,27 +394,27 @@ const BookingPage = () => {
                       <option value={4}>4 hours</option>
                       <option value={5}>5 hours</option>
                       <option value={6}>6 hours</option>
+                      <option value={7}>7 hours</option>
+                      <option value={8}>8 hours</option>
                     </select>
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="participants" className="form-label">
+                    <label htmlFor="number_of_people" className="form-label">
                       👥 Number of Participants
                     </label>
                     <input
                       type="number"
-                      className={`form-control ${
-                        errors.participants ? "is-invalid" : ""
-                      }`}
-                      id="participants"
-                      name="participants"
-                      value={booking.participants}
+                      className={`form-control ${errors.number_of_people ? "is-invalid" : ""}`}
+                      id="number_of_people"
+                      name="number_of_people"
+                      value={booking.number_of_people}
                       onChange={handleChange}
                       min="1"
                       max="20"
                     />
-                    {errors.participants && (
+                    {errors.number_of_people && (
                       <div className="invalid-feedback">
-                        {errors.participants}
+                        {errors.number_of_people}
                       </div>
                     )}
                   </div>
@@ -348,41 +436,6 @@ const BookingPage = () => {
                   />
                 </div>
 
-                {/* Payment Method */}
-                <div className="mb-4">
-                  <label className="form-label">💳 Payment Method</label>
-                  <div className="d-flex gap-3">
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name="payment_method"
-                        id="paypal"
-                        value="paypal"
-                        checked={booking.payment_method === "paypal"}
-                        onChange={handleChange}
-                      />
-                      <label className="form-check-label" htmlFor="paypal">
-                        PayPal
-                      </label>
-                    </div>
-                    <div className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="radio"
-                        name="payment_method"
-                        id="paymongo"
-                        value="paymongo"
-                        checked={booking.payment_method === "paymongo"}
-                        onChange={handleChange}
-                      />
-                      <label className="form-check-label" htmlFor="paymongo">
-                        PayMongo
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
                 <button
                   type="submit"
                   className="btn btn-success btn-lg w-100"
@@ -398,7 +451,7 @@ const BookingPage = () => {
                       Processing...
                     </>
                   ) : (
-                    "💳 Proceed to Payment"
+                    "📋 Create Booking"
                   )}
                 </button>
               </form>
@@ -416,32 +469,38 @@ const BookingPage = () => {
               <h5 className="mb-0">📋 Booking Summary</h5>
             </div>
             <div className="card-body">
-              <div className="d-flex justify-content-between mb-2">
-                <span>Guide Rate:</span>
-                <span>PHP {guide?.hourly_rate || 500}/hour</span>
-              </div>
+              {guide && (
+                <div className="mb-3">
+                  <h6>Guide: {guide.user?.name}</h6>
+                  <p className="text-muted mb-0">Rate: PHP {guide.hourly_rate || 500}/hour</p>
+                </div>
+              )}
+
+              {poi && (
+                <div className="mb-3">
+                  <h6>Destination: {poi.name}</h6>
+                  <p className="text-muted mb-0">{poi.address}</p>
+                </div>
+              )}
+
               <div className="d-flex justify-content-between mb-2">
                 <span>Duration:</span>
-                <span>{booking.duration} hour(s)</span>
+                <span>{booking.duration_hours} hour(s)</span>
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>Participants:</span>
-                <span>{booking.participants}</span>
+                <span>{booking.number_of_people}</span>
               </div>
               <hr />
               <div className="d-flex justify-content-between mb-2">
                 <strong>Subtotal:</strong>
                 <strong>PHP {calculateTotalPrice()}</strong>
               </div>
-              <div className="d-flex justify-content-between mb-2">
-                <span>Service Fee:</span>
-                <span>PHP 50</span>
-              </div>
               <hr />
               <div className="d-flex justify-content-between">
                 <h6>Total:</h6>
                 <h6 className="text-success">
-                  PHP {calculateTotalPrice() + 50}
+                  PHP {calculateTotalPrice()}
                 </h6>
               </div>
 
@@ -451,7 +510,7 @@ const BookingPage = () => {
                   <br />
                   • Cancellation: Free up to 24 hours before
                   <br />
-                  • Payment: Required at booking
+                  • Payment: Required at booking confirmation
                   <br />• Confirmation: Email sent within 1 hour
                 </small>
               </div>

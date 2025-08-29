@@ -24,9 +24,12 @@ import CategoryList from "./pages/CategoryList";
 import POIList from "./pages/POIList";
 import ProtectedRoute from "./components/ProtectedRoute";
 import GuideLocationApplications from "./pages/GuideLocationApplications";
+import GuideDutyLocations from "./pages/GuideDutyLocations";
 import GuideSpotSuggestions from "./pages/GuideSpotSuggestions";
 import AdminLocationApplications from "./pages/AdminLocationApplications";
 import AdminSpotSuggestions from "./pages/AdminSpotSuggestions";
+import AdminUserManagement from "./pages/AdminUserManagement";
+import AdminReports from "./pages/AdminReports";
 import "./App.css";
 
 const App = () => {
@@ -73,6 +76,14 @@ const App = () => {
             }
           />
           <Route
+            path="/guide/duty-locations"
+            element={
+              <ProtectedRoute allowedRoles={["guide"]}>
+                <GuideDutyLocations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/guide/spot-suggestions"
             element={
               <ProtectedRoute allowedRoles={["guide"]}>
@@ -95,6 +106,22 @@ const App = () => {
             element={
               <ProtectedRoute allowedRoles={["admin"]}>
                 <AdminSpotSuggestions />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/user-management"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminUserManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminReports />
               </ProtectedRoute>
             }
           />

@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "../theme.css";
 
 const BookingPage = () => {
   const { guideId, poiId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get data from navigation state if available
   const { poi: navPoi, city: navCity, guide: navGuide } = location.state || {};
-
 
   const [booking, setBooking] = useState({
     tour_guide_id: guideId || navGuide?.id || "",
@@ -21,6 +21,7 @@ const BookingPage = () => {
     duration_hours: 2,
     number_of_people: 1,
     special_requests: "",
+    payment_method: "paymongo", // default
   });
 
   const [guide, setGuide] = useState(navGuide || null);
@@ -50,12 +51,13 @@ const BookingPage = () => {
     loadBookingData();
   }, [guideId, poiId, navigate]);
 
+  // Update end_time when start_time or duration changes
   useEffect(() => {
     if (booking.start_time && booking.duration_hours) {
       const startTime = new Date(`2000-01-01T${booking.start_time}`);
       const endTime = new Date(startTime.getTime() + booking.duration_hours * 60 * 60 * 1000);
       const endTimeStr = endTime.toTimeString().slice(0, 5);
-      setBooking(prev => ({ ...prev, end_time: endTimeStr }));
+      setBooking((prev) => ({ ...prev, end_time: endTimeStr }));
     }
   }, [booking.start_time, booking.duration_hours]);
 
@@ -63,36 +65,26 @@ const BookingPage = () => {
     try {
       setLoading(true);
 
-      // Load guide data from URL parameter if provided
+      // Load guide data
       if (guideId && !guide) {
-        try {
-          const guideResponse = await axios.get(
-            `http://127.0.0.1:8000/api/guides/${guideId}`
-          );
-          setGuide(guideResponse.data.tour_guide || guideResponse.data);
-        } catch (error) {
-          console.error("Error loading guide:", error);
-        }
+        const guideResponse = await axios.get(
+          `http://127.0.0.1:8000/api/guides/${guideId}`
+        );
+        setGuide(guideResponse.data.tour_guide || guideResponse.data);
       }
 
-      // Load POI data from URL parameter if provided
+      // Load POI data
       if (poiId && !poi) {
-        try {
-          const poiResponse = await axios.get(
-            `http://127.0.0.1:8000/api/pois/${poiId}`
-          );
-          setPoi(poiResponse.data.point_of_interest || poiResponse.data);
-        } catch (error) {
-          console.error("Error loading POI:", error);
-        }
+        const poiResponse = await axios.get(
+          `http://127.0.0.1:8000/api/pois/${poiId}`
+        );
+        setPoi(poiResponse.data.point_of_interest || poiResponse.data);
       }
 
-
-      // Load available time slots for the guide
+      // Load time slots
       if (guideId || booking.tour_guide_id) {
         await loadAvailableTimeSlots();
       }
-
     } catch (error) {
       console.error("Error loading booking data:", error);
     } finally {
@@ -120,7 +112,6 @@ const BookingPage = () => {
       const selectedDate = new Date(booking.tour_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
       if (selectedDate < today) {
         newErrors.tour_date = "Date cannot be in the past";
       }
@@ -140,9 +131,7 @@ const BookingPage = () => {
 
     if (booking.number_of_people < 1) {
       newErrors.number_of_people = "At least 1 participant is required";
-    }
-
-    if (booking.number_of_people > 20) {
+    } else if (booking.number_of_people > 20) {
       newErrors.number_of_people = "Maximum 20 participants allowed";
     }
 
@@ -150,25 +139,25 @@ const BookingPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const calculateTotalPrice = () => {
-    if (!guide) return 0;
-    const basePrice = guide.hourly_rate || 500;
-    return basePrice * booking.duration_hours;
+  const calculateSubtotal = () => {
+    return (guide?.hourly_rate || 500) * booking.duration_hours;
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + 50; // +50 service fee
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       setSubmitting(true);
 
       const bookingData = {
         ...booking,
-        total_amount: calculateTotalPrice(),
+        total_amount: calculateTotal(),
       };
 
       const response = await axios.post(
@@ -206,57 +195,106 @@ const BookingPage = () => {
       [name]: value,
     }));
 
-    // Clear error when user starts typing
+    // Clear error when user types
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const handleGuideSelect = (selectedGuide) => {
     setGuide(selectedGuide);
-    setBooking(prev => ({
+    setBooking((prev) => ({
       ...prev,
-      tour_guide_id: selectedGuide.id
+      tour_guide_id: selectedGuide.id,
     }));
   };
 
   const handlePoiSelect = (selectedPoi) => {
     setPoi(selectedPoi);
-    setBooking(prev => ({
+    setBooking((prev) => ({
       ...prev,
-      point_of_interest_id: selectedPoi.id
+      point_of_interest_id: selectedPoi.id,
     }));
   };
 
   if (loading) {
     return (
-      <div className="container py-5 text-center">
-        <div className="spinner-border text-success" role="status">
+      <div
+        className="container py-5 text-center"
+        style={{ fontFamily: "var(--font-family-primary)" }}
+      >
+        <div
+          className="spinner-border"
+          role="status"
+          style={{
+            color: "var(--color-success)",
+            width: "3rem",
+            height: "3rem",
+          }}
+        >
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="mt-3">Loading booking information...</p>
+        <p
+          className="mt-3"
+          style={{
+            color: "var(--color-text-secondary)",
+            fontSize: "1.1rem",
+          }}
+        >
+          Loading booking information...
+        </p>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="container py-5 text-center">
-        <p>Please log in to make a booking.</p>
+      <div
+        className="container py-5 text-center"
+        style={{ fontFamily: "var(--font-family-primary)" }}
+      >
+        <p style={{ color: "var(--color-text-secondary)", fontSize: "1.1rem" }}>
+          Please log in to make a booking.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="container py-5">
+    <div
+      className="container py-5"
+      style={{ fontFamily: "var(--font-family-primary)" }}
+    >
       <div className="row">
+        {/* Main Booking Form */}
         <div className="col-lg-8">
-          <div className="card shadow border-0">
-            <div className="card-header bg-success text-white">
-              <h3 className="mb-0">📅 Book Your Tour</h3>
+          <div
+            className="card shadow-lg border-0"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            <div
+              className="card-header"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%)",
+                color: "white",
+                borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+                border: "none",
+              }}
+            >
+              <h3
+                className="mb-0"
+                style={{
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                }}
+              >
+                📅 Book Your Tour
+              </h3>
             </div>
             <div className="card-body p-4">
               <form onSubmit={handleSubmit}>
@@ -267,79 +305,156 @@ const BookingPage = () => {
                     <button
                       type="button"
                       className="btn btn-outline-primary w-100"
-                      onClick={() => navigate(`/poi/${poi?.id}/guides`)}
+                      onClick={() =>
+                        navigate(`/poi/${poi?.id}/guides`)
+                      }
                     >
                       Browse Available Guides
                     </button>
                     {errors.tour_guide_id && (
-                      <div className="text-danger small">{errors.tour_guide_id}</div>
-                    )}
-                  </div>
-                )}
-
-                {/* Guide Information */}
-                {guide && (
-                  <div className="mb-4 p-3 bg-light rounded">
-                    <div className="d-flex justify-content-between align-items-start">
-                      <div>
-                        <h5>👤 Selected Guide</h5>
-                        <div className="row">
-                          <div className="col-md-3">
-                            <img
-                              src={guide.user?.profile_picture || "/assets/guides/default.jpg"}
-                              alt={guide.user?.name}
-                              className="img-fluid rounded"
-                              style={{
-                                width: "100px",
-                                height: "100px",
-                                objectFit: "cover",
-                              }}
-                            />
-                          </div>
-                          <div className="col-md-9">
-                            <h6>{guide.user?.name}</h6>
-                            <p className="text-muted mb-1">
-                              ⭐ {guide.rating || 4.5} / 5
-                            </p>
-                            <p className="text-muted mb-1">
-                              💵 PHP {guide.hourly_rate || 500} per hour
-                            </p>
-                            <p className="text-muted mb-0">
-                              {guide.bio || "Experienced tour guide"}
-                            </p>
-                          </div>
-                        </div>
+                      <div className="text-danger small">
+                        {errors.tour_guide_id}
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={() => setGuide(null)}
-                      >
-                        Change
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* POI Information */}
-                {poi && (
-                  <div className="mb-4 p-3 bg-light rounded">
-                    <h5>📍 Selected Destination</h5>
-                    <h6>{poi.name}</h6>
-                    <p className="text-muted mb-0">{poi.description}</p>
-                    {poi.address && (
-                      <p className="text-muted small">
-                        <i className="fas fa-map-marker-alt me-1"></i>
-                        {poi.address}
-                      </p>
                     )}
                   </div>
                 )}
 
-                {/* Date and Time */}
+                {/* Guide Info */}
+                {guide && (
+                  <div
+                    className="mb-4 p-4"
+                    style={{
+                      backgroundColor: "var(--color-bg-secondary)",
+                      borderRadius: "var(--radius-lg)",
+                      border: "1px solid var(--color-border-light)",
+                    }}
+                  >
+                    <h5
+                      style={{
+                        color: "var(--color-text)",
+                        fontFamily: "var(--font-family-heading)",
+                        fontWeight: "600",
+                        marginBottom: "var(--spacing-md)",
+                      }}
+                    >
+                      👤 Tour Guide
+                    </h5>
+                    <div className="row">
+                      <div className="col-md-3">
+                        <img
+                          src={
+                            guide.profile_picture ||
+                            "/assets/guides/default.jpg"
+                          }
+                          alt={guide.name}
+                          className="img-fluid rounded"
+                          style={{
+                            width: "100px",
+                            height: "100px",
+                            objectFit: "cover",
+                            border: "3px solid var(--color-border)",
+                            boxShadow: "var(--shadow-md)",
+                          }}
+                        />
+                      </div>
+                      <div className="col-md-9">
+                        <h6
+                          style={{
+                            color: "var(--color-text)",
+                            fontFamily: "var(--font-family-heading)",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {guide.name}
+                        </h6>
+                        <p
+                          style={{
+                            color: "var(--color-text-secondary)",
+                            marginBottom: "var(--spacing-xs)",
+                          }}
+                        >
+                          ⭐ {guide.rating || 4.5} / 5
+                        </p>
+                        <p
+                          style={{
+                            color: "var(--color-text-secondary)",
+                            marginBottom: "var(--spacing-xs)",
+                          }}
+                        >
+                          💵 PHP {guide.hourly_rate || 500} per hour
+                        </p>
+                        <p
+                          style={{
+                            color: "var(--color-text-secondary)",
+                            marginBottom: "0",
+                          }}
+                        >
+                          {guide.bio || "Experienced tour guide"}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary mt-3"
+                      onClick={() => setGuide(null)}
+                    >
+                      Change Guide
+                    </button>
+                  </div>
+                )}
+
+                {/* POI Info */}
+                {poi && (
+                  <div
+                    className="mb-4 p-4"
+                    style={{
+                      backgroundColor: "var(--color-bg-secondary)",
+                      borderRadius: "var(--radius-lg)",
+                      border: "1px solid var(--color-border-light)",
+                    }}
+                  >
+                    <h5
+                      style={{
+                        color: "var(--color-text)",
+                        fontFamily: "var(--font-family-heading)",
+                        fontWeight: "600",
+                        marginBottom: "var(--spacing-md)",
+                      }}
+                    >
+                      📍 Destination
+                    </h5>
+                    <h6
+                      style={{
+                        color: "var(--color-text)",
+                        fontFamily: "var(--font-family-heading)",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {poi.name}
+                    </h6>
+                    <p
+                      style={{
+                        color: "var(--color-text-secondary)",
+                        marginBottom: "0",
+                      }}
+                    >
+                      {poi.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Date & Time */}
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <label htmlFor="tour_date" className="form-label">
+                    <label
+                      htmlFor="tour_date"
+                      className="form-label"
+                      style={{
+                        color: "var(--color-text)",
+                        fontWeight: "500",
+                        marginBottom: "var(--spacing-sm)",
+                      }}
+                    >
                       📅 Date
                     </label>
                     <input
@@ -350,13 +465,31 @@ const BookingPage = () => {
                       value={booking.tour_date}
                       onChange={handleChange}
                       min={new Date().toISOString().split("T")[0]}
+                      style={{
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-md)",
+                        padding: "var(--spacing-md)",
+                        backgroundColor: "var(--color-bg)",
+                        color: "var(--color-text)",
+                        transition: "var(--transition-fast)",
+                      }}
                     />
                     {errors.tour_date && (
-                      <div className="invalid-feedback">{errors.tour_date}</div>
+                      <div className="invalid-feedback">
+                        {errors.tour_date}
+                      </div>
                     )}
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="start_time" className="form-label">
+                    <label
+                      htmlFor="start_time"
+                      className="form-label"
+                      style={{
+                        color: "var(--color-text)",
+                        fontWeight: "500",
+                        marginBottom: "var(--spacing-sm)",
+                      }}
+                    >
                       🕐 Start Time
                     </label>
                     <input
@@ -366,6 +499,14 @@ const BookingPage = () => {
                       name="start_time"
                       value={booking.start_time}
                       onChange={handleChange}
+                      style={{
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-md)",
+                        padding: "var(--spacing-md)",
+                        backgroundColor: "var(--color-bg)",
+                        color: "var(--color-text)",
+                        transition: "var(--transition-fast)",
+                      }}
                     />
                     {errors.start_time && (
                       <div className="invalid-feedback">
@@ -375,10 +516,18 @@ const BookingPage = () => {
                   </div>
                 </div>
 
-                {/* Duration and Participants */}
+                {/* Duration & Participants */}
                 <div className="row mb-3">
                   <div className="col-md-6">
-                    <label htmlFor="duration_hours" className="form-label">
+                    <label
+                      htmlFor="duration_hours"
+                      className="form-label"
+                      style={{
+                        color: "var(--color-text)",
+                        fontWeight: "500",
+                        marginBottom: "var(--spacing-sm)",
+                      }}
+                    >
                       ⏱️ Duration (hours)
                     </label>
                     <select
@@ -387,19 +536,32 @@ const BookingPage = () => {
                       name="duration_hours"
                       value={booking.duration_hours}
                       onChange={handleChange}
+                      style={{
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-md)",
+                        padding: "var(--spacing-md)",
+                        backgroundColor: "var(--color-bg)",
+                        color: "var(--color-text)",
+                        transition: "var(--transition-fast)",
+                      }}
                     >
-                      <option value={1}>1 hour</option>
-                      <option value={2}>2 hours</option>
-                      <option value={3}>3 hours</option>
-                      <option value={4}>4 hours</option>
-                      <option value={5}>5 hours</option>
-                      <option value={6}>6 hours</option>
-                      <option value={7}>7 hours</option>
-                      <option value={8}>8 hours</option>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((hours) => (
+                        <option key={hours} value={hours}>
+                          {hours} hour{hours > 1 ? "s" : ""}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-md-6">
-                    <label htmlFor="number_of_people" className="form-label">
+                    <label
+                      htmlFor="number_of_people"
+                      className="form-label"
+                      style={{
+                        color: "var(--color-text)",
+                        fontWeight: "500",
+                        marginBottom: "var(--spacing-sm)",
+                      }}
+                    >
                       👥 Number of Participants
                     </label>
                     <input
@@ -411,6 +573,14 @@ const BookingPage = () => {
                       onChange={handleChange}
                       min="1"
                       max="20"
+                      style={{
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-md)",
+                        padding: "var(--spacing-md)",
+                        backgroundColor: "var(--color-bg)",
+                        color: "var(--color-text)",
+                        transition: "var(--transition-fast)",
+                      }}
                     />
                     {errors.number_of_people && (
                       <div className="invalid-feedback">
@@ -422,7 +592,15 @@ const BookingPage = () => {
 
                 {/* Special Requests */}
                 <div className="mb-3">
-                  <label htmlFor="special_requests" className="form-label">
+                  <label
+                    htmlFor="special_requests"
+                    className="form-label"
+                    style={{
+                      color: "var(--color-text)",
+                      fontWeight: "500",
+                      marginBottom: "var(--spacing-sm)",
+                    }}
+                  >
                     📝 Special Requests (Optional)
                   </label>
                   <textarea
@@ -433,13 +611,106 @@ const BookingPage = () => {
                     onChange={handleChange}
                     rows="3"
                     placeholder="Any special requirements or requests..."
+                    style={{
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-md)",
+                      padding: "var(--spacing-md)",
+                      backgroundColor: "var(--color-bg)",
+                      color: "var(--color-text)",
+                      transition: "var(--transition-fast)",
+                      resize: "vertical",
+                    }}
                   />
                 </div>
 
+                {/* Payment Method */}
+                <div className="mb-4">
+                  <label
+                    className="form-label"
+                    style={{
+                      color: "var(--color-text)",
+                      fontWeight: "500",
+                      marginBottom: "var(--spacing-sm)",
+                    }}
+                  >
+                    💳 Payment Method
+                  </label>
+                  <div className="d-flex gap-3">
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="payment_method"
+                        id="paypal"
+                        value="paypal"
+                        checked={booking.payment_method === "paypal"}
+                        onChange={handleChange}
+                        style={{
+                          accentColor: "var(--color-success)",
+                        }}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor="paypal"
+                        style={{
+                          color: "var(--color-text)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        PayPal
+                      </label>
+                    </div>
+                    <div className="form-check">
+                      <input
+                        className="form-check-input"
+                        type="radio"
+                        name="payment_method"
+                        id="paymongo"
+                        value="paymongo"
+                        checked={booking.payment_method === "paymongo"}
+                        onChange={handleChange}
+                        style={{
+                          accentColor: "var(--color-success)",
+                        }}
+                      />
+                      <label
+                        className="form-check-label"
+                        htmlFor="paymongo"
+                        style={{
+                          color: "var(--color-text)",
+                          cursor: "pointer",
+                        }}
+                      >
+                        PayMongo
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit Button */}
                 <button
                   type="submit"
-                  className="btn btn-success btn-lg w-100"
+                  className="btn btn-lg w-100"
                   disabled={submitting}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%)",
+                    border: "none",
+                    borderRadius: "var(--radius-lg)",
+                    color: "white",
+                    fontWeight: "600",
+                    padding: "var(--spacing-md)",
+                    transition: "var(--transition-normal)",
+                    boxShadow: "var(--shadow-md)",
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.transform = "translateY(-2px)";
+                    e.target.style.boxShadow = "var(--shadow-lg)";
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.transform = "translateY(0)";
+                    e.target.style.boxShadow = "var(--shadow-md)";
+                  }}
                 >
                   {submitting ? (
                     <>
@@ -462,51 +733,109 @@ const BookingPage = () => {
         {/* Booking Summary */}
         <div className="col-lg-4">
           <div
-            className="card shadow border-0 sticky-top"
-            style={{ top: "2rem" }}
+            className="card shadow-lg border-0 sticky-top"
+            style={{
+              top: "2rem",
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+            }}
           >
-            <div className="card-header bg-primary text-white">
-              <h5 className="mb-0">📋 Booking Summary</h5>
+            <div
+              className="card-header"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%)",
+                color: "white",
+                borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+                border: "none",
+              }}
+            >
+              <h5
+                className="mb-0"
+                style={{
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                }}
+              >
+                📋 Booking Summary
+              </h5>
             </div>
-            <div className="card-body">
-              {guide && (
-                <div className="mb-3">
-                  <h6>Guide: {guide.user?.name}</h6>
-                  <p className="text-muted mb-0">Rate: PHP {guide.hourly_rate || 500}/hour</p>
-                </div>
-              )}
-
-              {poi && (
-                <div className="mb-3">
-                  <h6>Destination: {poi.name}</h6>
-                  <p className="text-muted mb-0">{poi.address}</p>
-                </div>
-              )}
-
+            <div className="card-body" style={{ color: "var(--color-text)" }}>
               <div className="d-flex justify-content-between mb-2">
-                <span>Duration:</span>
-                <span>{booking.duration_hours} hour(s)</span>
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  Guide Rate:
+                </span>
+                <span style={{ fontWeight: "500" }}>
+                  PHP {guide?.hourly_rate || 500}/hour
+                </span>
               </div>
               <div className="d-flex justify-content-between mb-2">
-                <span>Participants:</span>
-                <span>{booking.number_of_people}</span>
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  Duration:
+                </span>
+                <span style={{ fontWeight: "500" }}>
+                  {booking.duration_hours} hour(s)
+                </span>
               </div>
-              <hr />
               <div className="d-flex justify-content-between mb-2">
-                <strong>Subtotal:</strong>
-                <strong>PHP {calculateTotalPrice()}</strong>
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  Participants:
+                </span>
+                <span style={{ fontWeight: "500" }}>
+                  {booking.number_of_people}
+                </span>
               </div>
-              <hr />
+              <hr style={{ borderColor: "var(--color-border)" }} />
+              <div className="d-flex justify-content-between mb-2">
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  Subtotal:
+                </span>
+                <span style={{ fontWeight: "500" }}>
+                  PHP {calculateSubtotal()}
+                </span>
+              </div>
+              <div className="d-flex justify-content-between mb-2">
+                <span style={{ color: "var(--color-text-secondary)" }}>
+                  Service Fee:
+                </span>
+                <span style={{ fontWeight: "500" }}>PHP 50</span>
+              </div>
+              <hr style={{ borderColor: "var(--color-border)" }} />
               <div className="d-flex justify-content-between">
-                <h6>Total:</h6>
-                <h6 className="text-success">
-                  PHP {calculateTotalPrice()}
+                <h6
+                  style={{
+                    color: "var(--color-text)",
+                    fontFamily: "var(--font-family-heading)",
+                    fontWeight: "600",
+                  }}
+                >
+                  Total:
+                </h6>
+                <h6
+                  style={{
+                    color: "var(--color-success)",
+                    fontFamily: "var(--font-family-heading)",
+                    fontWeight: "600",
+                    fontSize: "1.1rem",
+                  }}
+                >
+                  PHP {calculateTotal()}
                 </h6>
               </div>
 
-              <div className="mt-3 p-3 bg-light rounded">
-                <small className="text-muted">
-                  <strong>📋 Booking Policy:</strong>
+              <div
+                className="mt-3 p-3"
+                style={{
+                  backgroundColor: "var(--color-bg-secondary)",
+                  borderRadius: "var(--radius-md)",
+                  border: "1px solid var(--color-border-light)",
+                }}
+              >
+                <small style={{ color: "var(--color-text-secondary)" }}>
+                  <strong style={{ color: "var(--color-text)" }}>
+                    📋 Booking Policy:
+                  </strong>
                   <br />
                   • Cancellation: Free up to 24 hours before
                   <br />

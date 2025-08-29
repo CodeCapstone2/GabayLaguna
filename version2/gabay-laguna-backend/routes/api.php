@@ -11,6 +11,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\LocationApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,8 @@ use App\Http\Controllers\AdminController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/guide/register', [AuthController::class, 'registerGuide']);
+Route::get('/pois/{poi}/guides', [TourGuideController::class, 'getGuidesByPoi']);
+Route::get('/cities/{city}/guides', [TourGuideController::class, 'getGuidesByCity']);
 
 // Cities and Categories (public)
 Route::get('/cities', [CityController::class, 'index']);
@@ -81,8 +84,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/guide/specializations', [TourGuideController::class, 'getSpecializations']);
         Route::post('/guide/specializations', [TourGuideController::class, 'addSpecialization']);
         Route::delete('/guide/specializations/{specialization}', [TourGuideController::class, 'removeSpecialization']);
-        
+        Route::post('/guide/profile', [TourGuideController::class, 'updateProfile']);
+
         Route::get('/guide/reviews', [ReviewController::class, 'guideReviews']);
+        Route::put('/guide/update-profile', [TourGuideController::class, 'updateGuideData']);
+
+        Route::get('/guide/location-applications', [LocationApplicationController::class, 'guideApplications']);
+        Route::post('/guide/location-applications', [LocationApplicationController::class, 'store']);
     });
 
     // Admin routes
@@ -108,6 +116,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/pois', [PointOfInterestController::class, 'store']);
         Route::put('/admin/pois/{poi}', [PointOfInterestController::class, 'update']);
         Route::delete('/admin/pois/{poi}', [PointOfInterestController::class, 'destroy']);
+
+        Route::get('/admin/location-applications', [LocationApplicationController::class, 'index']);
+        Route::get('/admin/location-applications/{id}', [LocationApplicationController::class, 'show']);
+        Route::put('/admin/location-applications/{id}/approve', [LocationApplicationController::class, 'approve']);
+        Route::put('/admin/location-applications/{id}/reject', [LocationApplicationController::class, 'reject']);
+        Route::delete('/admin/location-applications/{id}', [LocationApplicationController::class, 'destroy']);
+
     });
 });
 

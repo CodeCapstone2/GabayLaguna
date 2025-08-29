@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../theme.css";
@@ -7,24 +7,31 @@ import "../theme.css";
 const BookingPage = () => {
   const { guideId, poiId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get data from navigation state if available
+  const { poi: navPoi, city: navCity, guide: navGuide } = location.state || {};
 
   const [booking, setBooking] = useState({
-    guide_id: guideId,
-    poi_id: poiId,
-    date: "",
+    tour_guide_id: guideId || navGuide?.id || "",
+    point_of_interest_id: poiId || navPoi?.id || "",
+    tour_date: "",
     start_time: "",
-    duration: 2,
-    participants: 1,
+    end_time: "",
+    duration_hours: 2,
+    number_of_people: 1,
     special_requests: "",
-    payment_method: "paypal",
+    payment_method: "paymongo", // default
   });
 
-  const [guide, setGuide] = useState(null);
-  const [poi, setPoi] = useState(null);
+  const [guide, setGuide] = useState(navGuide || null);
+  const [poi, setPoi] = useState(navPoi || null);
+  const [city, setCity] = useState(navCity || null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
+  const [timeSlots, setTimeSlots] = useState([]);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -41,49 +48,72 @@ const BookingPage = () => {
       return;
     }
 
-    // Load guide and POI data
     loadBookingData();
   }, [guideId, poiId, navigate]);
+
+  // Update end_time when start_time or duration changes
+  useEffect(() => {
+    if (booking.start_time && booking.duration_hours) {
+      const startTime = new Date(`2000-01-01T${booking.start_time}`);
+      const endTime = new Date(startTime.getTime() + booking.duration_hours * 60 * 60 * 1000);
+      const endTimeStr = endTime.toTimeString().slice(0, 5);
+      setBooking((prev) => ({ ...prev, end_time: endTimeStr }));
+    }
+  }, [booking.start_time, booking.duration_hours]);
 
   const loadBookingData = async () => {
     try {
       setLoading(true);
 
       // Load guide data
-      if (guideId) {
+      if (guideId && !guide) {
         const guideResponse = await axios.get(
           `http://127.0.0.1:8000/api/guides/${guideId}`
         );
-        setGuide(guideResponse.data);
+        setGuide(guideResponse.data.tour_guide || guideResponse.data);
       }
 
       // Load POI data
-      if (poiId) {
+      if (poiId && !poi) {
         const poiResponse = await axios.get(
           `http://127.0.0.1:8000/api/pois/${poiId}`
         );
-        setPoi(poiResponse.data);
+        setPoi(poiResponse.data.point_of_interest || poiResponse.data);
+      }
+
+      // Load time slots
+      if (guideId || booking.tour_guide_id) {
+        await loadAvailableTimeSlots();
       }
     } catch (error) {
       console.error("Error loading booking data:", error);
-      alert("Error loading booking information. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAvailableTimeSlots = async () => {
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/api/guides/${guideId || booking.tour_guide_id}/availability`
+      );
+      setTimeSlots(response.data || []);
+    } catch (error) {
+      console.error("Error loading time slots:", error);
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!booking.date) {
-      newErrors.date = "Date is required";
+    if (!booking.tour_date) {
+      newErrors.tour_date = "Date is required";
     } else {
-      const selectedDate = new Date(booking.date);
+      const selectedDate = new Date(booking.tour_date);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-
       if (selectedDate < today) {
-        newErrors.date = "Date cannot be in the past";
+        newErrors.tour_date = "Date cannot be in the past";
       }
     }
 
@@ -91,38 +121,43 @@ const BookingPage = () => {
       newErrors.start_time = "Start time is required";
     }
 
-    if (booking.participants < 1) {
-      newErrors.participants = "At least 1 participant is required";
+    if (!booking.tour_guide_id) {
+      newErrors.tour_guide_id = "Please select a guide";
     }
 
-    if (booking.participants > 20) {
-      newErrors.participants = "Maximum 20 participants allowed";
+    if (!booking.point_of_interest_id) {
+      newErrors.point_of_interest_id = "Please select a destination";
+    }
+
+    if (booking.number_of_people < 1) {
+      newErrors.number_of_people = "At least 1 participant is required";
+    } else if (booking.number_of_people > 20) {
+      newErrors.number_of_people = "Maximum 20 participants allowed";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const calculateTotalPrice = () => {
-    if (!guide) return 0;
-    const basePrice = guide.hourly_rate || 500;
-    return basePrice * booking.duration * booking.participants;
+  const calculateSubtotal = () => {
+    return (guide?.hourly_rate || 500) * booking.duration_hours;
+  };
+
+  const calculateTotal = () => {
+    return calculateSubtotal() + 50; // +50 service fee
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       setSubmitting(true);
 
       const bookingData = {
         ...booking,
-        total_amount: calculateTotalPrice(),
-        tourist_id: user.id,
+        total_amount: calculateTotal(),
       };
 
       const response = await axios.post(
@@ -137,11 +172,9 @@ const BookingPage = () => {
         }
       );
 
-      if (response.data.success) {
-        alert(
-          "🎉 Booking created successfully! You will receive a confirmation email shortly."
-        );
-        navigate("/tourist-dashboard");
+      if (response.data) {
+        alert("🎉 Booking created successfully! You will receive a confirmation email shortly.");
+        navigate("/my-bookings");
       } else {
         alert("Booking failed. Please try again.");
       }
@@ -162,13 +195,26 @@ const BookingPage = () => {
       [name]: value,
     }));
 
-    // Clear error when user starts typing
+    // Clear error when user types
     if (errors[name]) {
-      setErrors((prev) => ({
-        ...prev,
-        [name]: "",
-      }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+  };
+
+  const handleGuideSelect = (selectedGuide) => {
+    setGuide(selectedGuide);
+    setBooking((prev) => ({
+      ...prev,
+      tour_guide_id: selectedGuide.id,
+    }));
+  };
+
+  const handlePoiSelect = (selectedPoi) => {
+    setPoi(selectedPoi);
+    setBooking((prev) => ({
+      ...prev,
+      point_of_interest_id: selectedPoi.id,
+    }));
   };
 
   if (loading) {
@@ -207,12 +253,7 @@ const BookingPage = () => {
         className="container py-5 text-center"
         style={{ fontFamily: "var(--font-family-primary)" }}
       >
-        <p
-          style={{
-            color: "var(--color-text-secondary)",
-            fontSize: "1.1rem",
-          }}
-        >
+        <p style={{ color: "var(--color-text-secondary)", fontSize: "1.1rem" }}>
           Please log in to make a booking.
         </p>
       </div>
@@ -225,6 +266,7 @@ const BookingPage = () => {
       style={{ fontFamily: "var(--font-family-primary)" }}
     >
       <div className="row">
+        {/* Main Booking Form */}
         <div className="col-lg-8">
           <div
             className="card shadow-lg border-0"
@@ -256,7 +298,28 @@ const BookingPage = () => {
             </div>
             <div className="card-body p-4">
               <form onSubmit={handleSubmit}>
-                {/* Guide Information */}
+                {/* Guide Selection */}
+                {!guide && (
+                  <div className="mb-4">
+                    <label className="form-label">👤 Select a Guide</label>
+                    <button
+                      type="button"
+                      className="btn btn-outline-primary w-100"
+                      onClick={() =>
+                        navigate(`/poi/${poi?.id}/guides`)
+                      }
+                    >
+                      Browse Available Guides
+                    </button>
+                    {errors.tour_guide_id && (
+                      <div className="text-danger small">
+                        {errors.tour_guide_id}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Guide Info */}
                 {guide && (
                   <div
                     className="mb-4 p-4"
@@ -330,10 +393,17 @@ const BookingPage = () => {
                         </p>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary mt-3"
+                      onClick={() => setGuide(null)}
+                    >
+                      Change Guide
+                    </button>
                   </div>
                 )}
 
-                {/* POI Information */}
+                {/* POI Info */}
                 {poi && (
                   <div
                     className="mb-4 p-4"
@@ -373,11 +443,11 @@ const BookingPage = () => {
                   </div>
                 )}
 
-                {/* Date and Time */}
+                {/* Date & Time */}
                 <div className="row mb-3">
                   <div className="col-md-6">
                     <label
-                      htmlFor="date"
+                      htmlFor="tour_date"
                       className="form-label"
                       style={{
                         color: "var(--color-text)",
@@ -389,12 +459,10 @@ const BookingPage = () => {
                     </label>
                     <input
                       type="date"
-                      className={`form-control ${
-                        errors.date ? "is-invalid" : ""
-                      }`}
-                      id="date"
-                      name="date"
-                      value={booking.date}
+                      className={`form-control ${errors.tour_date ? "is-invalid" : ""}`}
+                      id="tour_date"
+                      name="tour_date"
+                      value={booking.tour_date}
                       onChange={handleChange}
                       min={new Date().toISOString().split("T")[0]}
                       style={{
@@ -406,8 +474,10 @@ const BookingPage = () => {
                         transition: "var(--transition-fast)",
                       }}
                     />
-                    {errors.date && (
-                      <div className="invalid-feedback">{errors.date}</div>
+                    {errors.tour_date && (
+                      <div className="invalid-feedback">
+                        {errors.tour_date}
+                      </div>
                     )}
                   </div>
                   <div className="col-md-6">
@@ -424,9 +494,7 @@ const BookingPage = () => {
                     </label>
                     <input
                       type="time"
-                      className={`form-control ${
-                        errors.start_time ? "is-invalid" : ""
-                      }`}
+                      className={`form-control ${errors.start_time ? "is-invalid" : ""}`}
                       id="start_time"
                       name="start_time"
                       value={booking.start_time}
@@ -448,11 +516,11 @@ const BookingPage = () => {
                   </div>
                 </div>
 
-                {/* Duration and Participants */}
+                {/* Duration & Participants */}
                 <div className="row mb-3">
                   <div className="col-md-6">
                     <label
-                      htmlFor="duration"
+                      htmlFor="duration_hours"
                       className="form-label"
                       style={{
                         color: "var(--color-text)",
@@ -464,9 +532,9 @@ const BookingPage = () => {
                     </label>
                     <select
                       className="form-select"
-                      id="duration"
-                      name="duration"
-                      value={booking.duration}
+                      id="duration_hours"
+                      name="duration_hours"
+                      value={booking.duration_hours}
                       onChange={handleChange}
                       style={{
                         border: "1px solid var(--color-border)",
@@ -477,17 +545,16 @@ const BookingPage = () => {
                         transition: "var(--transition-fast)",
                       }}
                     >
-                      <option value={1}>1 hour</option>
-                      <option value={2}>2 hours</option>
-                      <option value={3}>3 hours</option>
-                      <option value={4}>4 hours</option>
-                      <option value={5}>5 hours</option>
-                      <option value={6}>6 hours</option>
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((hours) => (
+                        <option key={hours} value={hours}>
+                          {hours} hour{hours > 1 ? "s" : ""}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div className="col-md-6">
                     <label
-                      htmlFor="participants"
+                      htmlFor="number_of_people"
                       className="form-label"
                       style={{
                         color: "var(--color-text)",
@@ -499,12 +566,10 @@ const BookingPage = () => {
                     </label>
                     <input
                       type="number"
-                      className={`form-control ${
-                        errors.participants ? "is-invalid" : ""
-                      }`}
-                      id="participants"
-                      name="participants"
-                      value={booking.participants}
+                      className={`form-control ${errors.number_of_people ? "is-invalid" : ""}`}
+                      id="number_of_people"
+                      name="number_of_people"
+                      value={booking.number_of_people}
                       onChange={handleChange}
                       min="1"
                       max="20"
@@ -517,9 +582,9 @@ const BookingPage = () => {
                         transition: "var(--transition-fast)",
                       }}
                     />
-                    {errors.participants && (
+                    {errors.number_of_people && (
                       <div className="invalid-feedback">
-                        {errors.participants}
+                        {errors.number_of_people}
                       </div>
                     )}
                   </div>
@@ -622,6 +687,7 @@ const BookingPage = () => {
                   </div>
                 </div>
 
+                {/* Submit Button */}
                 <button
                   type="submit"
                   className="btn btn-lg w-100"
@@ -656,7 +722,7 @@ const BookingPage = () => {
                       Processing...
                     </>
                   ) : (
-                    "💳 Proceed to Payment"
+                    "📋 Create Booking"
                   )}
                 </button>
               </form>
@@ -709,7 +775,7 @@ const BookingPage = () => {
                   Duration:
                 </span>
                 <span style={{ fontWeight: "500" }}>
-                  {booking.duration} hour(s)
+                  {booking.duration_hours} hour(s)
                 </span>
               </div>
               <div className="d-flex justify-content-between mb-2">
@@ -717,17 +783,17 @@ const BookingPage = () => {
                   Participants:
                 </span>
                 <span style={{ fontWeight: "500" }}>
-                  {booking.participants}
+                  {booking.number_of_people}
                 </span>
               </div>
               <hr style={{ borderColor: "var(--color-border)" }} />
               <div className="d-flex justify-content-between mb-2">
-                <strong style={{ color: "var(--color-text)" }}>
+                <span style={{ color: "var(--color-text-secondary)" }}>
                   Subtotal:
-                </strong>
-                <strong style={{ color: "var(--color-text)" }}>
-                  PHP {calculateTotalPrice()}
-                </strong>
+                </span>
+                <span style={{ fontWeight: "500" }}>
+                  PHP {calculateSubtotal()}
+                </span>
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span style={{ color: "var(--color-text-secondary)" }}>
@@ -754,7 +820,7 @@ const BookingPage = () => {
                     fontSize: "1.1rem",
                   }}
                 >
-                  PHP {calculateTotalPrice() + 50}
+                  PHP {calculateTotal()}
                 </h6>
               </div>
 
@@ -773,7 +839,7 @@ const BookingPage = () => {
                   <br />
                   • Cancellation: Free up to 24 hours before
                   <br />
-                  • Payment: Required at booking
+                  • Payment: Required at booking confirmation
                   <br />• Confirmation: Email sent within 1 hour
                 </small>
               </div>

@@ -34,7 +34,7 @@ const MyBookings = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/bookings/my-bookings",
+        "http://127.0.0.1:8000/api/bookings",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -43,7 +43,20 @@ const MyBookings = () => {
         }
       );
 
-      setBookings(response.data.bookings || []);
+      // Handle different API response formats
+      let bookingsData = [];
+      
+      if (Array.isArray(response.data)) {
+        bookingsData = response.data;
+      } else if (response.data.bookings) {
+        bookingsData = response.data.bookings.data || response.data.bookings;
+      } else if (response.data.data) {
+        bookingsData = response.data.data;
+      } else {
+        bookingsData = [];
+      }
+
+      setBookings(bookingsData);
     } catch (error) {
       console.error("Error loading bookings:", error);
       setBookings([]);
@@ -94,21 +107,62 @@ const MyBookings = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (error) {
+      return "Invalid date";
+    }
   };
 
   const formatTime = (timeString) => {
-    const [hours, minutes] = timeString.split(":");
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    try {
+      if (!timeString) return "N/A";
+      
+      const [hours, minutes] = timeString.split(":");
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      return "Invalid time";
+    }
+  };
+
+  // Helper function to extract data from booking object
+  const getBookingInfo = (booking) => {
+    // Handle different response formats
+    return {
+      id: booking.id,
+      status: booking.status,
+      date: booking.tour_date || booking.date,
+      start_time: booking.start_time,
+      duration: booking.duration_hours || booking.duration,
+      participants: booking.number_of_people || booking.participants,
+      total_amount: booking.total_amount,
+      special_requests: booking.special_requests,
+      
+      // Guide information
+      guide_name: booking.tour_guide?.user?.name || 
+                 booking.guide_name || 
+                 booking.tour_guide_name ||
+                 "Unknown Guide",
+      
+      // POI information
+      poi_name: booking.point_of_interest?.name || 
+               booking.poi_name || 
+               booking.point_of_interest_name ||
+               "Unknown Location",
+      
+      poi_address: booking.point_of_interest?.address || 
+                  booking.poi_address ||
+                  "Address not available"
+    };
   };
 
   const filterBookings = () => {
@@ -116,14 +170,15 @@ const MyBookings = () => {
     today.setHours(0, 0, 0, 0);
 
     return bookings.filter((booking) => {
-      const bookingDate = new Date(booking.date);
+      const bookingInfo = getBookingInfo(booking);
+      const bookingDate = new Date(bookingInfo.date);
 
       if (activeTab === "upcoming") {
-        return bookingDate >= today && booking.status !== "cancelled";
+        return bookingDate >= today && bookingInfo.status !== "cancelled";
       } else if (activeTab === "past") {
-        return bookingDate < today || booking.status === "completed";
+        return bookingDate < today || bookingInfo.status === "completed";
       } else if (activeTab === "cancelled") {
-        return booking.status === "cancelled";
+        return bookingInfo.status === "cancelled";
       }
 
       return true;
@@ -169,11 +224,12 @@ const MyBookings = () => {
           >
             🔮 Upcoming (
             {
-              filteredBookings.filter((b) => {
+              bookings.filter((booking) => {
+                const bookingInfo = getBookingInfo(booking);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                const bookingDate = new Date(b.date);
-                return bookingDate >= today && b.status !== "cancelled";
+                const bookingDate = new Date(bookingInfo.date);
+                return bookingDate >= today && bookingInfo.status !== "cancelled";
               }).length
             }
             )
@@ -186,11 +242,12 @@ const MyBookings = () => {
           >
             📚 Past (
             {
-              filteredBookings.filter((b) => {
+              bookings.filter((booking) => {
+                const bookingInfo = getBookingInfo(booking);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                const bookingDate = new Date(b.date);
-                return bookingDate < today || b.status === "completed";
+                const bookingDate = new Date(bookingInfo.date);
+                return bookingDate < today || bookingInfo.status === "completed";
               }).length
             }
             )
@@ -202,7 +259,10 @@ const MyBookings = () => {
             onClick={() => setActiveTab("cancelled")}
           >
             ❌ Cancelled (
-            {filteredBookings.filter((b) => b.status === "cancelled").length})
+            {bookings.filter((booking) => {
+              const bookingInfo = getBookingInfo(booking);
+              return bookingInfo.status === "cancelled";
+            }).length})
           </button>
         </li>
       </ul>
@@ -232,102 +292,119 @@ const MyBookings = () => {
         </div>
       ) : (
         <div className="row">
-          {filteredBookings.map((booking) => (
-            <div key={booking.id} className="col-12 mb-4">
-              <div className="card shadow-sm border-0">
-                <div className="card-body">
-                  <div className="row align-items-center">
-                    <div className="col-md-8">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <h5 className="card-title mb-0">{booking.poi_name}</h5>
-                        {getStatusBadge(booking.status)}
+          {filteredBookings.map((booking) => {
+            const bookingInfo = getBookingInfo(booking);
+            
+            return (
+              <div key={booking.id} className="col-12 mb-4">
+                <div className="card shadow-sm border-0">
+                  <div className="card-body">
+                    <div className="row align-items-center">
+                      <div className="col-md-8">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <h5 className="card-title mb-0">{bookingInfo.poi_name}</h5>
+                          {getStatusBadge(bookingInfo.status)}
+                        </div>
+
+                        <div className="row text-muted small mb-2">
+                          <div className="col-md-6">
+                            <p className="mb-1">
+                              <strong>👤 Guide:</strong> {bookingInfo.guide_name}
+                            </p>
+                            <p className="mb-1">
+                              <strong>📅 Date:</strong> {formatDate(bookingInfo.date)}
+                            </p>
+                            <p className="mb-1">
+                              <strong>🕐 Time:</strong>{" "}
+                              {formatTime(bookingInfo.start_time)}
+                            </p>
+                            <p className="mb-1">
+                              <strong>📍 Address:</strong> {bookingInfo.poi_address}
+                            </p>
+                          </div>
+                          <div className="col-md-6">
+                            <p className="mb-1">
+                              <strong>⏱️ Duration:</strong> {bookingInfo.duration}{" "}
+                              hour(s)
+                            </p>
+                            <p className="mb-1">
+                              <strong>👥 Participants:</strong>{" "}
+                              {bookingInfo.participants}
+                            </p>
+                            <p className="mb-1">
+                              <strong>💵 Total:</strong> PHP{" "}
+                              {bookingInfo.total_amount || "0.00"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {bookingInfo.special_requests && (
+                          <div className="mb-2">
+                            <small className="text-muted">
+                              <strong>📝 Special Requests:</strong>{" "}
+                              {bookingInfo.special_requests}
+                            </small>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="row text-muted small mb-2">
-                        <div className="col-md-6">
-                          <p className="mb-1">
-                            <strong>👤 Guide:</strong> {booking.guide_name}
-                          </p>
-                          <p className="mb-1">
-                            <strong>📅 Date:</strong> {formatDate(booking.date)}
-                          </p>
-                          <p className="mb-1">
-                            <strong>🕐 Time:</strong>{" "}
-                            {formatTime(booking.start_time)}
-                          </p>
-                        </div>
-                        <div className="col-md-6">
-                          <p className="mb-1">
-                            <strong>⏱️ Duration:</strong> {booking.duration}{" "}
-                            hour(s)
-                          </p>
-                          <p className="mb-1">
-                            <strong>👥 Participants:</strong>{" "}
-                            {booking.participants}
-                          </p>
-                          <p className="mb-1">
-                            <strong>💵 Total:</strong> PHP{" "}
-                            {booking.total_amount}
-                          </p>
-                        </div>
-                      </div>
+                      <div className="col-md-4 text-end">
+                        <div className="d-grid gap-2">
+                          {bookingInfo.status === "confirmed" && (
+                            <button
+                              className="btn btn-outline-success btn-sm"
+                              onClick={() =>
+                                alert("Contact details will be sent via email")
+                              }
+                            >
+                              📞 Contact Guide
+                            </button>
+                          )}
 
-                      {booking.special_requests && (
-                        <div className="mb-2">
-                          <small className="text-muted">
-                            <strong>📝 Special Requests:</strong>{" "}
-                            {booking.special_requests}
-                          </small>
-                        </div>
-                      )}
-                    </div>
+                          {bookingInfo.status === "pending" && (
+                            <button
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={() => cancelBooking(booking.id)}
+                            >
+                              ❌ Cancel Booking
+                            </button>
+                          )}
 
-                    <div className="col-md-4 text-end">
-                      <div className="d-grid gap-2">
-                        {booking.status === "confirmed" && (
+                          {bookingInfo.status === "completed" && (
+                            <button
+                              className="btn btn-outline-primary btn-sm"
+                              onClick={() => alert("Review feature coming soon!")}
+                            >
+                              ⭐ Leave Review
+                            </button>
+                          )}
+
                           <button
-                            className="btn btn-outline-success btn-sm"
-                            onClick={() =>
-                              alert("Contact details will be sent via email")
-                            }
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => {
+                              // Show booking details in a modal or alert
+                              alert(`Booking Details:\n
+Status: ${bookingInfo.status}\n
+Guide: ${bookingInfo.guide_name}\n
+Location: ${bookingInfo.poi_name}\n
+Date: ${formatDate(bookingInfo.date)}\n
+Time: ${formatTime(bookingInfo.start_time)}\n
+Duration: ${bookingInfo.duration} hours\n
+Participants: ${bookingInfo.participants}\n
+Total: PHP ${bookingInfo.total_amount || "0.00"}`
+                              );
+                            }}
                           >
-                            📞 Contact Guide
+                            📋 View Details
                           </button>
-                        )}
-
-                        {booking.status === "pending" && (
-                          <button
-                            className="btn btn-outline-danger btn-sm"
-                            onClick={() => cancelBooking(booking.id)}
-                          >
-                            ❌ Cancel Booking
-                          </button>
-                        )}
-
-                        {booking.status === "completed" && (
-                          <button
-                            className="btn btn-outline-primary btn-sm"
-                            onClick={() => alert("Review feature coming soon!")}
-                          >
-                            ⭐ Leave Review
-                          </button>
-                        )}
-
-                        <button
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={() =>
-                            alert("Booking details will be shown here")
-                          }
-                        >
-                          📋 View Details
-                        </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

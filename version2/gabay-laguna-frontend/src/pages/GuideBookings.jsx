@@ -35,7 +35,7 @@ const GuideBookings = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/guides/my-bookings",
+        "http://127.0.0.1:8000/api/guide/bookings",
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -44,7 +44,20 @@ const GuideBookings = () => {
         }
       );
 
-      setBookings(response.data.bookings || []);
+      // Handle different API response formats
+      let bookingsData = [];
+      
+      if (Array.isArray(response.data)) {
+        bookingsData = response.data;
+      } else if (response.data.bookings) {
+        bookingsData = response.data.bookings.data || response.data.bookings;
+      } else if (response.data.data) {
+        bookingsData = response.data.data;
+      } else {
+        bookingsData = [];
+      }
+
+      setBookings(bookingsData);
     } catch (error) {
       console.error("Error loading bookings:", error);
       setBookings([]);
@@ -57,8 +70,8 @@ const GuideBookings = () => {
     try {
       const token = localStorage.getItem("token");
 
-      await axios.patch(
-        `http://127.0.0.1:8000/api/bookings/${bookingId}/status`,
+      await axios.put(
+        `http://127.0.0.1:8000/api/guide/bookings/${bookingId}/status`,
         { status },
         {
           headers: {
@@ -97,33 +110,82 @@ const GuideBookings = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (error) {
+      return "Invalid date";
+    }
   };
 
   const formatTime = (timeString) => {
-    const [hours, minutes] = timeString.split(":");
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? "PM" : "AM";
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
+    try {
+      if (!timeString) return "N/A";
+      
+      const [hours, minutes] = timeString.split(":");
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      return "Invalid time";
+    }
+  };
+
+  // Helper function to extract data from booking object
+  const getBookingInfo = (booking) => {
+    // Handle different response formats
+    return {
+      id: booking.id,
+      status: booking.status,
+      date: booking.tour_date || booking.date,
+      start_time: booking.start_time,
+      end_time: booking.end_time,
+      duration: booking.duration_hours || booking.duration,
+      participants: booking.number_of_people || booking.participants,
+      total_amount: booking.total_amount,
+      special_requests: booking.special_requests,
+      
+      // Tourist information
+      tourist_name: booking.tourist?.name || 
+                   booking.tourist_name || 
+                   "Unknown Tourist",
+      tourist_email: booking.tourist?.email || 
+                     booking.tourist_email || 
+                     "No email provided",
+      tourist_phone: booking.tourist?.phone || 
+                     booking.tourist_phone || 
+                     "No phone provided",
+      
+      // POI information
+      poi_name: booking.point_of_interest?.name || 
+               booking.poi_name || 
+               booking.point_of_interest_name ||
+               "Unknown Location",
+      
+      poi_address: booking.point_of_interest?.address || 
+                  booking.poi_address ||
+                  "Address not available"
+    };
   };
 
   const filterBookings = () => {
     return bookings.filter((booking) => {
+      const bookingInfo = getBookingInfo(booking);
+      
       if (activeTab === "pending") {
-        return booking.status === "pending";
+        return bookingInfo.status === "pending";
       } else if (activeTab === "confirmed") {
-        return booking.status === "confirmed";
+        return bookingInfo.status === "confirmed";
       } else if (activeTab === "completed") {
-        return booking.status === "completed";
+        return bookingInfo.status === "completed";
       } else if (activeTab === "cancelled") {
-        return booking.status === "cancelled" || booking.status === "rejected";
+        return bookingInfo.status === "cancelled" || bookingInfo.status === "rejected";
       }
       return true;
     });
@@ -167,7 +229,10 @@ const GuideBookings = () => {
             onClick={() => setActiveTab("pending")}
           >
             ⏳ Pending (
-            {filteredBookings.filter((b) => b.status === "pending").length})
+            {bookings.filter((booking) => {
+              const bookingInfo = getBookingInfo(booking);
+              return bookingInfo.status === "pending";
+            }).length})
           </button>
         </li>
         <li className="nav-item" role="presentation">
@@ -176,7 +241,10 @@ const GuideBookings = () => {
             onClick={() => setActiveTab("confirmed")}
           >
             ✅ Confirmed (
-            {filteredBookings.filter((b) => b.status === "confirmed").length})
+            {bookings.filter((booking) => {
+              const bookingInfo = getBookingInfo(booking);
+              return bookingInfo.status === "confirmed";
+            }).length})
           </button>
         </li>
         <li className="nav-item" role="presentation">
@@ -185,7 +253,10 @@ const GuideBookings = () => {
             onClick={() => setActiveTab("completed")}
           >
             🎉 Completed (
-            {filteredBookings.filter((b) => b.status === "completed").length})
+            {bookings.filter((booking) => {
+              const bookingInfo = getBookingInfo(booking);
+              return bookingInfo.status === "completed";
+            }).length})
           </button>
         </li>
         <li className="nav-item" role="presentation">
@@ -194,12 +265,10 @@ const GuideBookings = () => {
             onClick={() => setActiveTab("cancelled")}
           >
             ❌ Cancelled (
-            {
-              filteredBookings.filter(
-                (b) => b.status === "cancelled" || b.status === "rejected"
-              ).length
-            }
-            )
+            {bookings.filter((booking) => {
+              const bookingInfo = getBookingInfo(booking);
+              return bookingInfo.status === "cancelled" || bookingInfo.status === "rejected";
+            }).length})
           </button>
         </li>
       </ul>
@@ -223,120 +292,142 @@ const GuideBookings = () => {
         </div>
       ) : (
         <div className="row">
-          {filteredBookings.map((booking) => (
-            <div key={booking.id} className="col-12 mb-4">
-              <div className="card shadow-sm border-0">
-                <div className="card-body">
-                  <div className="row align-items-center">
-                    <div className="col-md-8">
-                      <div className="d-flex justify-content-between align-items-start mb-2">
-                        <h5 className="card-title mb-0">{booking.poi_name}</h5>
-                        {getStatusBadge(booking.status)}
-                      </div>
-
-                      <div className="row text-muted small mb-2">
-                        <div className="col-md-6">
-                          <p className="mb-1">
-                            <strong>👤 Tourist:</strong> {booking.tourist_name}
-                          </p>
-                          <p className="mb-1">
-                            <strong>📧 Email:</strong> {booking.tourist_email}
-                          </p>
-                          <p className="mb-1">
-                            <strong>📞 Phone:</strong> {booking.tourist_phone}
-                          </p>
+          {filteredBookings.map((booking) => {
+            const bookingInfo = getBookingInfo(booking);
+            
+            return (
+              <div key={booking.id} className="col-12 mb-4">
+                <div className="card shadow-sm border-0">
+                  <div className="card-body">
+                    <div className="row align-items-center">
+                      <div className="col-md-8">
+                        <div className="d-flex justify-content-between align-items-start mb-2">
+                          <h5 className="card-title mb-0">{bookingInfo.poi_name}</h5>
+                          {getStatusBadge(bookingInfo.status)}
                         </div>
-                        <div className="col-md-6">
-                          <p className="mb-1">
-                            <strong>📅 Date:</strong> {formatDate(booking.date)}
-                          </p>
-                          <p className="mb-1">
-                            <strong>🕐 Time:</strong>{" "}
-                            {formatTime(booking.start_time)}
-                          </p>
-                          <p className="mb-1">
-                            <strong>⏱️ Duration:</strong> {booking.duration}{" "}
-                            hour(s)
-                          </p>
-                          <p className="mb-1">
-                            <strong>👥 Participants:</strong>{" "}
-                            {booking.participants}
-                          </p>
-                          <p className="mb-1">
-                            <strong>💵 Total:</strong> PHP{" "}
-                            {booking.total_amount}
-                          </p>
-                        </div>
-                      </div>
 
-                      {booking.special_requests && (
-                        <div className="mb-2">
-                          <small className="text-muted">
-                            <strong>📝 Special Requests:</strong>{" "}
-                            {booking.special_requests}
-                          </small>
+                        <div className="row text-muted small mb-2">
+                          <div className="col-md-6">
+                            <p className="mb-1">
+                              <strong>👤 Tourist:</strong> {bookingInfo.tourist_name}
+                            </p>
+                            <p className="mb-1">
+                              <strong>📧 Email:</strong> {bookingInfo.tourist_email}
+                            </p>
+                            <p className="mb-1">
+                              <strong>📞 Phone:</strong> {bookingInfo.tourist_phone}
+                            </p>
+                            <p className="mb-1">
+                              <strong>📍 Location:</strong> {bookingInfo.poi_address}
+                            </p>
+                          </div>
+                          <div className="col-md-6">
+                            <p className="mb-1">
+                              <strong>📅 Date:</strong> {formatDate(bookingInfo.date)}
+                            </p>
+                            <p className="mb-1">
+                              <strong>🕐 Time:</strong>{" "}
+                              {formatTime(bookingInfo.start_time)} - {formatTime(bookingInfo.end_time)}
+                            </p>
+                            <p className="mb-1">
+                              <strong>⏱️ Duration:</strong> {bookingInfo.duration}{" "}
+                              hour(s)
+                            </p>
+                            <p className="mb-1">
+                              <strong>👥 Participants:</strong>{" "}
+                              {bookingInfo.participants}
+                            </p>
+                            <p className="mb-1">
+                              <strong>💵 Total:</strong> PHP{" "}
+                              {bookingInfo.total_amount || "0.00"}
+                            </p>
+                          </div>
                         </div>
-                      )}
-                    </div>
 
-                    <div className="col-md-4 text-end">
-                      <div className="d-grid gap-2">
-                        {booking.status === "pending" && (
-                          <>
-                            <button
-                              className="btn btn-success btn-sm"
-                              onClick={() =>
-                                updateBookingStatus(booking.id, "confirmed")
-                              }
-                            >
-                              ✅ Accept Booking
-                            </button>
-                            <button
-                              className="btn btn-danger btn-sm"
-                              onClick={() =>
-                                updateBookingStatus(booking.id, "rejected")
-                              }
-                            >
-                              ❌ Reject Booking
-                            </button>
-                          </>
+                        {bookingInfo.special_requests && (
+                          <div className="mb-2">
+                            <small className="text-muted">
+                              <strong>📝 Special Requests:</strong>{" "}
+                              {bookingInfo.special_requests}
+                            </small>
+                          </div>
                         )}
+                      </div>
 
-                        {booking.status === "confirmed" && (
+                      <div className="col-md-4 text-end">
+                        <div className="d-grid gap-2">
+                          {bookingInfo.status === "pending" && (
+                            <>
+                              <button
+                                className="btn btn-success btn-sm"
+                                onClick={() =>
+                                  updateBookingStatus(booking.id, "confirmed")
+                                }
+                              >
+                                ✅ Accept Booking
+                              </button>
+                              <button
+                                className="btn btn-danger btn-sm"
+                                onClick={() =>
+                                  updateBookingStatus(booking.id, "rejected")
+                                }
+                              >
+                                ❌ Reject Booking
+                              </button>
+                            </>
+                          )}
+
+                          {bookingInfo.status === "confirmed" && (
+                            <button
+                              className="btn btn-info btn-sm"
+                              onClick={() =>
+                                updateBookingStatus(booking.id, "completed")
+                              }
+                            >
+                              🎉 Mark as Completed
+                            </button>
+                          )}
+
                           <button
-                            className="btn btn-info btn-sm"
-                            onClick={() =>
-                              updateBookingStatus(booking.id, "completed")
-                            }
+                            className="btn btn-outline-secondary btn-sm"
+                            onClick={() => {
+                              alert(`Tourist Contact Information:\n
+Name: ${bookingInfo.tourist_name}\n
+Email: ${bookingInfo.tourist_email}\n
+Phone: ${bookingInfo.tourist_phone}`
+                              );
+                            }}
                           >
-                            🎉 Mark as Completed
+                            📞 Contact Tourist
                           </button>
-                        )}
 
-                        <button
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={() =>
-                            alert("Contact details will be shown here")
-                          }
-                        >
-                          📞 Contact Tourist
-                        </button>
-
-                        <button
-                          className="btn btn-outline-primary btn-sm"
-                          onClick={() =>
-                            alert("Booking details will be shown here")
-                          }
-                        >
-                          📋 View Details
-                        </button>
+                          <button
+                            className="btn btn-outline-primary btn-sm"
+                            onClick={() => {
+                              alert(`Booking Details:\n
+Status: ${bookingInfo.status}\n
+Tourist: ${bookingInfo.tourist_name}\n
+Location: ${bookingInfo.poi_name}\n
+Address: ${bookingInfo.poi_address}\n
+Date: ${formatDate(bookingInfo.date)}\n
+Time: ${formatTime(bookingInfo.start_time)} - ${formatTime(bookingInfo.end_time)}\n
+Duration: ${bookingInfo.duration} hours\n
+Participants: ${bookingInfo.participants}\n
+Total: PHP ${bookingInfo.total_amount || "0.00"}\n
+Special Requests: ${bookingInfo.special_requests || "None"}`
+                              );
+                            }}
+                          >
+                            📋 View Details
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

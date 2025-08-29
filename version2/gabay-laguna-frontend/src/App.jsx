@@ -17,7 +17,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import BookingPage from "./pages/BookingPage";
 import MyBookings from "./pages/MyBookings";
 import GuideBookings from "./pages/GuideBookings";
+import POIGuides from "./pages/POIGuides";
 import CitiesList from "./pages/CitiesList";
+import POIs from "./pages/POIs";
 import CategoryList from "./pages/CategoryList";
 import POIList from "./pages/POIList";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -61,7 +63,9 @@ const App = () => {
           <Route path="/cities" element={<CitiesList />} />
           <Route path="/categories/:city" element={<CategoryList />} />
           <Route path="/spots/:city/:category" element={<POIList />} />
-
+          <Route path="/city/:cityId/pois" element={<POIs />} />
+          <Route path="/poi/:poiId" element={<POIs />} />
+          <Route path="/poi/:poiId/guides" element={<POIGuides />} />
           {/* Guide-only routes */}
           <Route
             path="/guide/location-applications"

@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\City;
 use App\Models\TourGuide;
+use App\Models\PointOfInterest;
+use App\Models\LocationApplication;
 use App\Models\GuideAvailability;
 use App\Models\GuideSpecialization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+
 
 class TourGuideController extends Controller
 {
@@ -41,6 +45,49 @@ class TourGuideController extends Controller
             'tour_guide' => $guide
         ]);
     }
+
+    /**
+     * Update tour guide specific data
+     */
+    public function updateGuideData(Request $request)
+    {
+        $guide = $request->user()->tourGuide;
+        
+        if (!$guide) {
+            return response()->json([
+                'message' => 'Tour guide profile not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'bio' => 'nullable|string|max:1000',
+            'license_number' => 'nullable|string|max:255',
+            'experience_years' => 'nullable|integer|min:0',
+            'hourly_rate' => 'nullable|numeric|min:0',
+            'languages' => 'nullable|string|max:255',
+            'transportation_type' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Filter out empty values
+        $dataToUpdate = array_filter($request->all(), function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        $guide->update($dataToUpdate);
+
+        return response()->json([
+            'message' => 'Tour guide data updated successfully',
+            'tour_guide' => $guide
+        ]);
+    }
+
 
     /**
      * Search tour guides
@@ -102,9 +149,7 @@ class TourGuideController extends Controller
 
         $availabilities = $guide->availabilities()->get();
 
-        return response()->json([
-            'availabilities' => $availabilities
-        ]);
+        return response()->json($availabilities);
     }
 
     /**
@@ -124,6 +169,7 @@ class TourGuideController extends Controller
             'day_of_week' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
+            'is_available' => 'required|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -133,11 +179,27 @@ class TourGuideController extends Controller
             ], 422);
         }
 
+        // Check if availability already exists for this time slot
+        $existing = GuideAvailability::where('tour_guide_id', $guide->id)
+            ->where('day_of_week', $request->day_of_week)
+            ->where('start_time', $request->start_time)
+            ->where('end_time', $request->end_time)
+            ->first();
+
+        if ($existing) {
+            $existing->update(['is_available' => $request->is_available]);
+            return response()->json([
+                'message' => 'Availability updated successfully',
+                'availability' => $existing
+            ]);
+        }
+
         $availability = GuideAvailability::create([
             'tour_guide_id' => $guide->id,
             'day_of_week' => $request->day_of_week,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
+            'is_available' => $request->is_available,
         ]);
 
         return response()->json([
@@ -219,9 +281,7 @@ class TourGuideController extends Controller
 
         $specializations = $guide->specializations()->with('category')->get();
 
-        return response()->json([
-            'specializations' => $specializations
-        ]);
+        return response()->json($specializations);
     }
 
     /**
@@ -291,5 +351,87 @@ class TourGuideController extends Controller
         return response()->json([
             'message' => 'Specialization removed successfully'
         ]);
+    }
+
+    public function getGuidesByPoi(Request $request, $poiId)
+{
+    $validator = Validator::make(['poi_id' => $poiId], [
+        'poi_id' => 'required|exists:points_of_interest,id'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'message' => 'Validation failed',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    // Get guides who have applied and been approved for this POI's city
+    $poi = PointOfInterest::with('city')->findOrFail($poiId);
+    
+    $guides = TourGuide::verified()
+        ->available()
+        ->whereHas('locationApplications', function ($query) use ($poi) {
+            $query->where('city_id', $poi->city_id)
+                  ->where('status', 'approved')
+                  ->where(function ($q) use ($poi) {
+                      $q->where('poi_id', $poi->id)
+                        ->orWhereNull('poi_id'); // Guides approved for the entire city
+                  });
+        })
+        ->with(['user', 'categories', 'reviews'])
+        ->get();
+
+    return response()->json([
+        'guides' => $guides,
+        'poi' => $poi
+    ]);
+}
+
+/**
+ * Get guides available for a specific city
+ */
+    public function getGuidesByCity(Request $request, $cityId)
+    {
+        try {
+            \Log::info('Fetching guides for city:', ['city_id' => $cityId]);
+            
+            // Validate city exists - use findOrFail for better error handling
+            $city = City::find($cityId);
+            if (!$city) {
+                return response()->json([
+                    'message' => 'City not found'
+                ], 404);
+            }
+
+            // Get guides with approved applications for this city
+            $guides = TourGuide::where('is_verified', true)
+                ->where('is_available', true)
+                ->whereHas('locationApplications', function ($query) use ($cityId) {
+                    $query->where('city_id', $cityId)
+                        ->where('status', 'approved');
+                })
+                ->with(['user', 'categories'])
+                ->get();
+
+            \Log::info('Found guides:', ['count' => $guides->count()]);
+
+            return response()->json([
+                'guides' => $guides,
+                'count' => $guides->count(),
+                'city' => $city
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getGuidesByCity:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Server error: ' . $e->getMessage()
+            ], 500);
+        }
+
     }
 }

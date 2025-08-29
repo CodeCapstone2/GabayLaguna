@@ -27,6 +27,11 @@ class TourGuide extends Model
         'is_available' => 'boolean',
     ];
 
+    public function locationApplications()
+    {
+        return $this->hasMany(LocationApplication::class);
+    }
+
     /**
      * Get the user that owns this tour guide profile
      */

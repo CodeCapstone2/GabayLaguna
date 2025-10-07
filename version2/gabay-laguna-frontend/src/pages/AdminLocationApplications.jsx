@@ -1,5 +1,5 @@
 // Update your AdminLocationApplications component with these improvements
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import API_CONFIG from "../config/api";
 
 const AdminLocationApplications = () => {
@@ -7,7 +7,7 @@ const AdminLocationApplications = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all', 'pending', 'approved', 'rejected'
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -22,9 +22,9 @@ const AdminLocationApplications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filter]);
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const act = async (id, action) => {
     try {

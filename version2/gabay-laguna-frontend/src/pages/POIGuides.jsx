@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import API_CONFIG from "../config/api";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 
@@ -8,18 +8,10 @@ const POIGuides = () => {
   const location = useLocation();
   const [guides, setGuides] = useState([]);
   const [poi, setPoi] = useState(location.state?.poi || {});
-  const [city, setCity] = useState(location.state?.city || {});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    fetchGuides();
-    if (!location.state?.poi) {
-      fetchPoiData();
-    }
-  }, [poiId]);
-
-  const fetchGuides = async () => {
+  const fetchGuides = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -43,9 +35,9 @@ const POIGuides = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [poiId]);
 
-  const fetchPoiData = async () => {
+  const fetchPoiData = useCallback(async () => {
     try {
       const response = await fetch(`${API_CONFIG.BASE_URL}/api/pois/${poiId}`);
       const data = await response.json();
@@ -53,7 +45,14 @@ const POIGuides = () => {
     } catch (error) {
       console.error("Error fetching POI data:", error);
     }
-  };
+  }, [poiId]);
+
+  useEffect(() => {
+    fetchGuides();
+    if (!location.state?.poi) {
+      fetchPoiData();
+    }
+  }, [poiId, fetchGuides, fetchPoiData, location.state?.poi]);
 
   const getDemoGuides = () => {
     // Demo data for fallback
@@ -84,7 +83,6 @@ const POIGuides = () => {
     navigate(`/booking/${guide.id}/${poiId}`, {
       state: {
         poi: poi,
-        city: city,
         guide: guide,
       },
     });

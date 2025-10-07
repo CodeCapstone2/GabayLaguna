@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 const GuideSpotSuggestions = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [form, setForm] = useState({
     name: "",
@@ -18,11 +17,11 @@ const GuideSpotSuggestions = () => {
   useEffect(() => {
     const raw = localStorage.getItem("user");
     try {
-      setUser(raw ? JSON.parse(raw) : null);
+      const userData = raw ? JSON.parse(raw) : null;
+      if (!userData || userData.user_type !== "guide") {
+        navigate("/login");
+      }
     } catch {
-      setUser(null);
-    }
-    if (!raw) {
       navigate("/login");
     }
   }, [navigate]);

@@ -11,7 +11,6 @@ const MyBookings = () => {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState("upcoming");
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showLocationTracker, setShowLocationTracker] = useState(false);
@@ -22,7 +21,7 @@ const MyBookings = () => {
     const userData = localStorage.getItem("user");
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        // User data parsed but not stored in state
       } catch (error) {
         console.error("Error parsing user data:", error);
         navigate("/login");

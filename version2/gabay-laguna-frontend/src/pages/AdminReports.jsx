@@ -7,7 +7,6 @@ import "../theme.css";
 
 const AdminReports = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("month"); // week, month, year
   const [stats, setStats] = useState({
@@ -20,31 +19,16 @@ const AdminReports = () => {
     avgBookingValue: 0,
   });
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        navigate("/login");
-        return;
-      }
-    } else {
-      navigate("/login");
-      return;
-    }
-
-    loadStats();
-  }, [navigate, timeRange, loadStats]);
-
   const loadStats = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
       console.log("Loading reports with token:", token ? "Present" : "Missing");
-      console.log("API URL:", `${API_CONFIG.BASE_URL}/api/admin/reports?time_range=${timeRange}`);
-      
+      console.log(
+        "API URL:",
+        `${API_CONFIG.BASE_URL}/api/admin/reports?time_range=${timeRange}`
+      );
+
       const response = await axios.get(
         `${API_CONFIG.BASE_URL}/api/admin/reports?time_range=${timeRange}`,
         {
@@ -54,9 +38,9 @@ const AdminReports = () => {
           },
         }
       );
-      
+
       console.log("Reports API Response:", response.data);
-      
+
       // Handle the response format from backend
       const backendStats = response.data.stats || {};
       setStats({
@@ -72,12 +56,12 @@ const AdminReports = () => {
       console.error("Error loading stats:", error);
       console.error("Error details:", error.response?.data);
       console.error("Error status:", error.response?.status);
-      
+
       // Show error message and set fallback data
       alert(
         "Unable to load analytics data. Please check your connection and try again."
       );
-      
+
       // Set fallback data based on seeded database
       setStats({
         totalRevenue: 0, // No payments yet
@@ -92,6 +76,24 @@ const AdminReports = () => {
       setLoading(false);
     }
   }, [timeRange]);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        // User data parsed but not stored in state
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        navigate("/login");
+        return;
+      }
+    } else {
+      navigate("/login");
+      return;
+    }
+
+    loadStats();
+  }, [navigate, timeRange, loadStats]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-PH", {
@@ -108,10 +110,7 @@ const AdminReports = () => {
   const exportReport = () => {
     try {
       const rows = [
-        [
-          "Metric",
-          "Value",
-        ],
+        ["Metric", "Value"],
         ["Total Revenue (PHP)", stats.totalRevenue],
         ["Total Bookings", stats.totalBookings],
         ["Active Guides", stats.activeGuides],
@@ -122,7 +121,9 @@ const AdminReports = () => {
       ];
 
       const csv = rows
-        .map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(","))
+        .map((r) =>
+          r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(",")
+        )
         .join("\n");
 
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -161,10 +162,26 @@ const AdminReports = () => {
 
       // Data for bars
       const data = [
-        { label: "Revenue (PHP)", value: Number(stats.totalRevenue) || 0, color: "#28a745" },
-        { label: "Bookings", value: Number(stats.totalBookings) || 0, color: "#0d6efd" },
-        { label: "Users", value: Number(stats.totalUsers) || 0, color: "#17a2b8" },
-        { label: "Active Guides", value: Number(stats.activeGuides) || 0, color: "#20c997" },
+        {
+          label: "Revenue (PHP)",
+          value: Number(stats.totalRevenue) || 0,
+          color: "#28a745",
+        },
+        {
+          label: "Bookings",
+          value: Number(stats.totalBookings) || 0,
+          color: "#0d6efd",
+        },
+        {
+          label: "Users",
+          value: Number(stats.totalUsers) || 0,
+          color: "#17a2b8",
+        },
+        {
+          label: "Active Guides",
+          value: Number(stats.activeGuides) || 0,
+          color: "#20c997",
+        },
       ];
 
       const maxVal = Math.max(...data.map((d) => d.value), 1);
@@ -230,9 +247,9 @@ const AdminReports = () => {
       "\n"
     )}\n\n— Gabay Laguna Admin`;
 
-    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
-      body
-    )}`;
+    const mailto = `mailto:?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
   };
 

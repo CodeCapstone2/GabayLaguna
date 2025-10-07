@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_CONFIG from "../config/api";
@@ -32,25 +32,7 @@ const GuideDutyLocations = () => {
     notes: "",
   });
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        navigate("/login");
-        return;
-      }
-    } else {
-      navigate("/login");
-      return;
-    }
-
-    loadInitialData();
-  }, [navigate]);
-
-  const loadInitialData = async () => {
+  const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -75,7 +57,25 @@ const GuideDutyLocations = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        navigate("/login");
+        return;
+      }
+    } else {
+      navigate("/login");
+      return;
+    }
+
+    loadInitialData();
+  }, [navigate, loadInitialData]);
 
   const loadDutyLocations = async () => {
     try {
@@ -99,64 +99,6 @@ const GuideDutyLocations = () => {
     }
   };
 
-  // Fallback POI data for when API fails - matches actual database cities
-  const getFallbackPOIs = (cityId) => {
-    const fallbackData = {
-      1: [ // Pagsanjan
-        { id: 1, name: "Pagsanjan Falls", city_id: 1, description: "One of the most famous waterfalls in the Philippines, featuring thrilling boat rides through narrow gorges." },
-        { id: 2, name: "Pagsanjan Arch", city_id: 1, description: "A historical arch that serves as the gateway to Pagsanjan town." }
-      ],
-      2: [ // Sta. Rosa
-        { id: 3, name: "Enchanted Kingdom", city_id: 2, description: "A popular theme park with thrilling rides and family attractions." },
-        { id: 4, name: "Sta. Rosa City Hall", city_id: 2, description: "The modern city hall building showcasing contemporary architecture." }
-      ],
-      3: [ // Lumban
-        { id: 5, name: "Lake Caliraya", city_id: 3, description: "A beautiful man-made lake perfect for water sports and relaxation." },
-        { id: 6, name: "Lumban Church", city_id: 3, description: "A historical church known for its beautiful architecture." }
-      ],
-      4: [ // Nagcarlan
-        { id: 7, name: "Nagcarlan Underground Cemetery", city_id: 4, description: "A unique underground cemetery with historical significance." },
-        { id: 8, name: "Nagcarlan Falls", city_id: 4, description: "Beautiful waterfalls perfect for nature lovers and adventure seekers." }
-      ],
-      5: [ // Calamba
-        { id: 9, name: "Rizal Shrine", city_id: 5, description: "The birthplace of Dr. Jose Rizal, the Philippine national hero." },
-        { id: 10, name: "Calamba Church", city_id: 5, description: "St. John the Baptist Parish Church where Rizal was baptized." },
-        { id: 11, name: "Mount Makiling", city_id: 5, description: "A dormant volcano known for its rich biodiversity and hiking trails." }
-      ],
-      6: [ // Pila
-        { id: 12, name: "Pila Heritage Town", city_id: 6, description: "A well-preserved Spanish colonial town with historical architecture." }
-      ],
-      7: [ // Los Baños
-        { id: 13, name: "UP Los Baños", city_id: 7, description: "The University of the Philippines Los Baños campus with beautiful grounds." },
-        { id: 14, name: "Los Baños Hot Springs", city_id: 7, description: "Natural hot springs perfect for relaxation and wellness." }
-      ],
-      8: [ // San Pablo City
-        { id: 15, name: "Seven Lakes of San Pablo", city_id: 8, description: "Seven crater lakes formed by volcanic activity, perfect for nature lovers." },
-        { id: 16, name: "San Pablo Cathedral", city_id: 8, description: "The main cathedral of San Pablo City, known as the City of Seven Lakes." }
-      ],
-      9: [ // Liliw
-        { id: 17, name: "Liliw Church", city_id: 9, description: "A beautiful church known for its cool climate and footwear industry." }
-      ],
-      10: [ // Paete
-        { id: 18, name: "Paete Woodcarving Shops", city_id: 10, description: "The woodcarving capital of the Philippines with skilled artisans." }
-      ],
-      11: [ // Majayjay
-        { id: 19, name: "Majayjay Church", city_id: 11, description: "A historical church in a mountainous town with cool climate." },
-        { id: 20, name: "Majayjay Falls", city_id: 11, description: "Beautiful waterfalls in a mountainous setting." }
-      ],
-      12: [ // Pangil
-        { id: 21, name: "Pangil River", city_id: 12, description: "Perfect for river adventures and water activities." }
-      ],
-      13: [ // Luisiana
-        { id: 22, name: "Luisiana Scenic Views", city_id: 13, description: "Mountainous town with scenic views and peaceful environment." }
-      ],
-      14: [ // Calauan
-        { id: 23, name: "Calauan Nature Park", city_id: 14, description: "Agricultural lands and nature parks near Laguna de Bay." }
-      ]
-    };
-    
-    return fallbackData[cityId] || [];
-  };
 
   const loadPointsOfInterest = async (cityId) => {
     if (!cityId) {

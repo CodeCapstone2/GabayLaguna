@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import API_CONFIG from "../config/api";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -14,91 +14,7 @@ const GuideLocationTracker = ({ bookingId, guide, poi }) => {
   const markerRef = useRef(null);
   const intervalRef = useRef(null);
 
-  useEffect(() => {
-    if (bookingId) {
-      fetchGuideLocation();
-      startLocationPolling();
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [bookingId]);
-
-  const fetchGuideLocation = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const token = localStorage.getItem("token");
-      const response = await axios.get(
-        `${API_CONFIG.BASE_URL}/api/bookings/${bookingId}/guide-location`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-          },
-        }
-      );
-
-      if (response.data.location) {
-        const loc = response.data.location;
-        const normalized = {
-          latitude:
-            loc.latitude !== null && loc.latitude !== undefined
-              ? parseFloat(loc.latitude)
-              : null,
-          longitude:
-            loc.longitude !== null && loc.longitude !== undefined
-              ? parseFloat(loc.longitude)
-              : null,
-          accuracy:
-            loc.accuracy !== null && loc.accuracy !== undefined
-              ? parseFloat(loc.accuracy)
-              : null,
-          speed:
-            loc.speed !== null && loc.speed !== undefined
-              ? parseFloat(loc.speed)
-              : null,
-          heading:
-            loc.heading !== null && loc.heading !== undefined
-              ? parseFloat(loc.heading)
-              : null,
-          address: loc.address || null,
-          last_updated_at: loc.last_updated_at || null,
-        };
-
-        setLocation(normalized);
-        setLastUpdate(
-          normalized.last_updated_at
-            ? new Date(normalized.last_updated_at)
-            : null
-        );
-        setIsTracking(true);
-        updateMap(normalized);
-      } else {
-        setLocation(null);
-        setIsTracking(false);
-      }
-    } catch (error) {
-      console.error("Error fetching guide location:", error);
-      setError("Unable to fetch guide location");
-      setIsTracking(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startLocationPolling = () => {
-    // Poll for location updates every 30 seconds
-    intervalRef.current = setInterval(() => {
-      fetchGuideLocation();
-    }, 30000);
-  };
-
-  const updateMap = (locationData) => {
+  const updateMap = useCallback((locationData) => {
     if (!locationData || !mapRef.current) return;
 
     const { latitude, longitude } = locationData;
@@ -162,7 +78,91 @@ const GuideLocationTracker = ({ bookingId, guide, poi }) => {
     setError(
       "Map libraries failed to load. Please check your network connection."
     );
-  };
+  }, [guide, poi]);
+
+  const fetchGuideLocation = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem("token");
+      const response = await axios.get(
+        `${API_CONFIG.BASE_URL}/api/bookings/${bookingId}/guide-location`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+        }
+      );
+
+      if (response.data.location) {
+        const loc = response.data.location;
+        const normalized = {
+          latitude:
+            loc.latitude !== null && loc.latitude !== undefined
+              ? parseFloat(loc.latitude)
+              : null,
+          longitude:
+            loc.longitude !== null && loc.longitude !== undefined
+              ? parseFloat(loc.longitude)
+              : null,
+          accuracy:
+            loc.accuracy !== null && loc.accuracy !== undefined
+              ? parseFloat(loc.accuracy)
+              : null,
+          speed:
+            loc.speed !== null && loc.speed !== undefined
+              ? parseFloat(loc.speed)
+              : null,
+          heading:
+            loc.heading !== null && loc.heading !== undefined
+              ? parseFloat(loc.heading)
+              : null,
+          address: loc.address || null,
+          last_updated_at: loc.last_updated_at || null,
+        };
+
+        setLocation(normalized);
+        setLastUpdate(
+          normalized.last_updated_at
+            ? new Date(normalized.last_updated_at)
+            : null
+        );
+        setIsTracking(true);
+        updateMap(normalized);
+      } else {
+        setLocation(null);
+        setIsTracking(false);
+      }
+    } catch (error) {
+      console.error("Error fetching guide location:", error);
+      setError("Unable to fetch guide location");
+      setIsTracking(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [bookingId, updateMap]);
+
+  const startLocationPolling = useCallback(() => {
+    // Poll for location updates every 30 seconds
+    intervalRef.current = setInterval(() => {
+      fetchGuideLocation();
+    }, 30000);
+  }, [fetchGuideLocation]);
+
+  useEffect(() => {
+    if (bookingId) {
+      fetchGuideLocation();
+      startLocationPolling();
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [bookingId, fetchGuideLocation, startLocationPolling]);
 
   const formatLastUpdate = (date) => {
     if (!date) return "Never";
@@ -194,18 +194,6 @@ const GuideLocationTracker = ({ bookingId, guide, poi }) => {
     return "offline";
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "online":
-        return "#28a745";
-      case "recent":
-        return "#ffc107";
-      case "offline":
-        return "#dc3545";
-      default:
-        return "#6c757d";
-    }
-  };
 
   const getStatusText = (status) => {
     switch (status) {

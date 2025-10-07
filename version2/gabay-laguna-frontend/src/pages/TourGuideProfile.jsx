@@ -38,6 +38,55 @@ const TourGuideProfile = () => {
   const [error, setError] = useState("");
   const fileInputRef = useRef(null);
 
+  const handleUnauthorized = useCallback(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  }, [navigate]);
+
+  const fetchGuideData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      // Fetch availability
+      const availabilityRes = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/availability`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
+      if (availabilityRes.ok) {
+        const availabilityData = await availabilityRes.json();
+        setAvailability(
+          Array.isArray(availabilityData) ? availabilityData : []
+        );
+      } else if (availabilityRes.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
+      // Fetch specializations
+      const specRes = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/specializations`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
+      if (specRes.ok) {
+        const specData = await specRes.json();
+        setSpecializations(Array.isArray(specData) ? specData : []);
+      }
+    } catch (error) {
+      console.error("Error fetching guide data:", error);
+      setError("Failed to load guide data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [handleUnauthorized]);
+
   useEffect(() => {
     const userData = localStorage.getItem("user");
     const token = localStorage.getItem("token");
@@ -95,48 +144,6 @@ const TourGuideProfile = () => {
     return headers;
   };
 
-  const fetchGuideData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      // Fetch availability
-      const availabilityRes = await fetch(
-        `${API_CONFIG.BASE_URL}/api/guide/availability`,
-        {
-          headers: getAuthHeaders(),
-        }
-      );
-
-      if (availabilityRes.ok) {
-        const availabilityData = await availabilityRes.json();
-        setAvailability(
-          Array.isArray(availabilityData) ? availabilityData : []
-        );
-      } else if (availabilityRes.status === 401) {
-        handleUnauthorized();
-        return;
-      }
-
-      // Fetch specializations
-      const specRes = await fetch(
-        `${API_CONFIG.BASE_URL}/api/guide/specializations`,
-        {
-          headers: getAuthHeaders(),
-        }
-      );
-
-      if (specRes.ok) {
-        const specData = await specRes.json();
-        setSpecializations(Array.isArray(specData) ? specData : []);
-      }
-    } catch (error) {
-      console.error("Error fetching guide data:", error);
-      setError("Failed to load guide data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -150,11 +157,6 @@ const TourGuideProfile = () => {
     }
   };
 
-  const handleUnauthorized = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
 
   const handleEdit = () => {
     setIsEditing(true);

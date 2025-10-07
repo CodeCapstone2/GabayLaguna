@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 
 const GuideLocationApplications = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
   const [applications, setApplications] = useState([]);
   const [pois, setPois] = useState([]);
   const [cities, setCities] = useState([]);
@@ -18,12 +17,10 @@ const GuideLocationApplications = () => {
     const raw = localStorage.getItem("user");
     try {
       const userData = raw ? JSON.parse(raw) : null;
-      setUser(userData);
       if (!userData || userData.user_type !== "guide") {
         navigate("/login");
       }
     } catch {
-      setUser(null);
       navigate("/login");
     }
   }, [navigate]);
@@ -77,7 +74,7 @@ const GuideLocationApplications = () => {
       const filtered = pois.filter((poi) => {
         // Handle both object and ID formats
         const poiCityId = poi.city ? poi.city.id : poi.city_id;
-        return poiCityId == form.cityId;
+        return poiCityId === form.cityId;
       });
       setFilteredPois(filtered);
     } else {
@@ -172,13 +169,13 @@ const GuideLocationApplications = () => {
 
   // Helper function to get city name
   const getCityName = (cityId) => {
-    const city = cities.find((c) => c.id == cityId);
+    const city = cities.find((c) => c.id === cityId);
     return city ? city.name : `City ${cityId}`;
   };
 
   // Helper function to get POI name
   const getPoiName = (poiId) => {
-    const poi = pois.find((p) => p.id == poiId);
+    const poi = pois.find((p) => p.id === poiId);
     return poi ? poi.name : `POI ${poiId}`;
   };
 

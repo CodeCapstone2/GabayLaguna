@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import API_CONFIG from "../config/api";
@@ -11,7 +11,7 @@ const BookingPage = () => {
   const location = useLocation();
 
   // Get data from navigation state if available
-  const { poi: navPoi, city: navCity, guide: navGuide } = location.state || {};
+  const { poi: navPoi, guide: navGuide } = location.state || {};
 
   const [booking, setBooking] = useState({
     tour_guide_id: guideId || navGuide?.id || "",
@@ -27,44 +27,25 @@ const BookingPage = () => {
 
   const [guide, setGuide] = useState(navGuide || null);
   const [poi, setPoi] = useState(navPoi || null);
-  const [city, setCity] = useState(navCity || null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
-  const [timeSlots, setTimeSlots] = useState([]);
 
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        navigate("/login");
-        return;
-      }
-    } else {
-      navigate("/login");
-      return;
-    }
-
-    loadBookingData();
-  }, [guideId, poiId, navigate]);
-
-  // Update end_time when start_time or duration changes
-  useEffect(() => {
-    if (booking.start_time && booking.duration_hours) {
-      const startTime = new Date(`2000-01-01T${booking.start_time}`);
-      const endTime = new Date(
-        startTime.getTime() + booking.duration_hours * 60 * 60 * 1000
+  const loadAvailableTimeSlots = useCallback(async () => {
+    try {
+      await axios.get(
+        `${API_CONFIG.BASE_URL}/api/guides/${
+          guideId || booking.tour_guide_id
+        }/availability`
       );
-      const endTimeStr = endTime.toTimeString().slice(0, 5);
-      setBooking((prev) => ({ ...prev, end_time: endTimeStr }));
+      // Time slots are not used in the current implementation
+    } catch (error) {
+      console.error("Error loading time slots:", error);
     }
-  }, [booking.start_time, booking.duration_hours]);
+  }, [guideId, booking.tour_guide_id]);
 
-  const loadBookingData = async () => {
+  const loadBookingData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -93,20 +74,37 @@ const BookingPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [guideId, poiId, guide, poi, loadAvailableTimeSlots, booking.tour_guide_id]);
 
-  const loadAvailableTimeSlots = async () => {
-    try {
-      const response = await axios.get(
-        `${API_CONFIG.BASE_URL}/api/guides/${
-          guideId || booking.tour_guide_id
-        }/availability`
-      );
-      setTimeSlots(response.data || []);
-    } catch (error) {
-      console.error("Error loading time slots:", error);
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData));
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        navigate("/login");
+        return;
+      }
+    } else {
+      navigate("/login");
+      return;
     }
-  };
+
+    loadBookingData();
+  }, [guideId, poiId, navigate, loadBookingData]);
+
+  // Update end_time when start_time or duration changes
+  useEffect(() => {
+    if (booking.start_time && booking.duration_hours) {
+      const startTime = new Date(`2000-01-01T${booking.start_time}`);
+      const endTime = new Date(
+        startTime.getTime() + booking.duration_hours * 60 * 60 * 1000
+      );
+      const endTimeStr = endTime.toTimeString().slice(0, 5);
+      setBooking((prev) => ({ ...prev, end_time: endTimeStr }));
+    }
+  }, [booking.start_time, booking.duration_hours]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -208,21 +206,6 @@ const BookingPage = () => {
     }
   };
 
-  const handleGuideSelect = (selectedGuide) => {
-    setGuide(selectedGuide);
-    setBooking((prev) => ({
-      ...prev,
-      tour_guide_id: selectedGuide.id,
-    }));
-  };
-
-  const handlePoiSelect = (selectedPoi) => {
-    setPoi(selectedPoi);
-    setBooking((prev) => ({
-      ...prev,
-      point_of_interest_id: selectedPoi.id,
-    }));
-  };
 
   if (loading) {
     return (

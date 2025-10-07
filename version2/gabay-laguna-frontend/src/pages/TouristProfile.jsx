@@ -10,8 +10,6 @@ import {
   FaTimes,
   FaCamera,
   FaMapMarkerAlt,
-  FaCalendarAlt,
-  FaStar,
 } from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 

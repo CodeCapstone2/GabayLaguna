@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import API_CONFIG from "../config/api";
@@ -36,9 +36,9 @@ const AdminReports = () => {
     }
 
     loadStats();
-  }, [navigate, timeRange]);
+  }, [navigate, timeRange, loadStats]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
@@ -91,7 +91,7 @@ const AdminReports = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("en-PH", {

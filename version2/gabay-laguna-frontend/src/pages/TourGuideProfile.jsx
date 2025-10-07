@@ -9,7 +9,6 @@ import {
   FaTimes,
   FaCamera,
   FaMapMarkerAlt,
-  FaCalendarAlt,
   FaStar,
   FaCertificate,
   FaLanguage,

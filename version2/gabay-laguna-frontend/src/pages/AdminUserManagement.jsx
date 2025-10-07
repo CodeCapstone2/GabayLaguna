@@ -14,22 +14,22 @@ const AdminUserManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const userData = localStorage.getItem("user");
-    console.log("User data from localStorage:", userData);
+    const userDataString = localStorage.getItem("user");
+    console.log("User data from localStorage:", userDataString);
     
-    if (userData) {
+    if (userDataString) {
       try {
-        const user = JSON.parse(userData);
-        console.log("Parsed user:", user);
-        console.log("User type:", user.user_type);
+        const userData = JSON.parse(userDataString);
+        console.log("Parsed user:", userData);
+        console.log("User type:", userData.user_type);
         
-        if (user.user_type !== "admin") {
+        if (userData.user_type !== "admin") {
           console.log("User is not admin, redirecting to login");
           alert("Access denied. Admin privileges required.");
           navigate("/login");
           return;
         }
-        setUser(user);
+        setUser(userData);
         console.log("User is admin, proceeding to load users");
       } catch (error) {
         console.error("Error parsing user data:", error);

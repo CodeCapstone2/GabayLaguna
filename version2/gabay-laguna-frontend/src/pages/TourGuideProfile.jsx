@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import API_CONFIG from "../config/api";
 import {
@@ -79,7 +79,7 @@ const TourGuideProfile = () => {
       console.error("Error parsing user data:", error);
       navigate("/login");
     }
-  }, [navigate, fetchGuideData]);
+  }, [navigate]);
 
   const getAuthHeaders = (includeJson = true) => {
     const token = localStorage.getItem("token");
@@ -95,7 +95,7 @@ const TourGuideProfile = () => {
     return headers;
   };
 
-  const fetchGuideData = useCallback(async () => {
+  const fetchGuideData = async () => {
     try {
       setLoading(true);
       setError("");
@@ -136,7 +136,7 @@ const TourGuideProfile = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   const fetchCategories = async () => {
     try {

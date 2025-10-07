@@ -89,7 +89,7 @@ const SignupGuide = () => {
         Object.entries(form).forEach(([key, val]) => formData.append(key, val));
         formData.append("certificate", certificate);
 
-        await axios.post(
+        const res = await axios.post(
           `${API_CONFIG.BASE_URL}/api/guide/register`,
           formData,
           {

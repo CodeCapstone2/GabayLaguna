@@ -22,10 +22,10 @@ const TouristDashboard = () => {
     }
   }, [user, navigate]);
 
-  // const handleLogout = () => {
-  //   localStorage.removeItem("user");
-  //   navigate("/login");
-  // };
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
   console.log("TouristDashboard - User data:", user);
 

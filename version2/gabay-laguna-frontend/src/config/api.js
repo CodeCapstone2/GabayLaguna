@@ -1,35 +1,17 @@
 import axios from "axios";
 
 // API Configuration
-// Resolve API base URL with multiple fallbacks and overrides
-const queryParams = new URLSearchParams(window.location.search);
-const queryApi = queryParams.get('api');
-const lsApi = (() => {
-  try {
-    return localStorage.getItem('API_BASE_URL') || undefined;
-  } catch { return undefined; }
-})();
-
-const resolvedBaseUrl =
-  queryApi ||
-  window.__API_BASE_URL__ ||
-  lsApi ||
-  process.env.REACT_APP_API_BASE_URL ||
-  "http://localhost:8000";
-
-if (lsApi !== resolvedBaseUrl) {
-  try { localStorage.setItem('API_BASE_URL', resolvedBaseUrl); } catch {}
-}
-
+// Production-ready API configuration for Vercel
 const API_CONFIG = {
-  BASE_URL: resolvedBaseUrl,
+  // Use environment variable in production, fallback to config.js, then localhost for development
+  BASE_URL: process.env.REACT_APP_API_BASE_URL || window.__API_BASE_URL__ || "http://localhost:8000",
 };
 
-// Configure axios defaults for better cross-device compatibility
+// Configure axios defaults for production
 axios.defaults.baseURL = API_CONFIG.BASE_URL;
 axios.defaults.headers.common["Accept"] = "application/json";
 axios.defaults.headers.common["Content-Type"] = "application/json";
-axios.defaults.withCredentials = false; // Changed to false for ngrok
+axios.defaults.withCredentials = false;
 
 // Add request interceptor for authentication token
 axios.interceptors.request.use(
@@ -39,8 +21,7 @@ axios.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // Add ngrok-skip-browser-warning header for ngrok
-    config.headers["ngrok-skip-browser-warning"] = "true";
+    // Add any production-specific headers here if needed
 
     return config;
   },

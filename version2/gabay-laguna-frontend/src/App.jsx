@@ -31,8 +31,6 @@ import AdminLocationApplications from "./pages/AdminLocationApplications";
 import AdminSpotSuggestions from "./pages/AdminSpotSuggestions";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminReports from "./pages/AdminReports";
-import GuideReviews from "./pages/GuideReviews";
-import TouristReviews from "./pages/TouristReviews";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 
@@ -81,9 +79,7 @@ const App = () => {
                   />
                   <Route path="/guide-dashboard" element={<GuideDashboard />} />
                   <Route path="/tourist-profile" element={<TouristProfile />} />
-                  <Route path="/tourist/reviews" element={<TouristReviews />} />
                   <Route path="/guide-profile" element={<TourGuideProfile />} />
-                  <Route path="/guide/reviews" element={<GuideReviews />} />
                   <Route path="/admin-dashboard" element={<AdminDashboard />} />
                   <Route
                     path="/booking/:guideId/:poiId"

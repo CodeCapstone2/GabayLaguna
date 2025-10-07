@@ -60,7 +60,6 @@ const Login = () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              "ngrok-skip-browser-warning": "true",
             },
           }
         );
@@ -83,12 +82,11 @@ const Login = () => {
           navigate("/");
         }
       } catch (error) {
-        // Improve diagnostics for Network Error
+        // Enhanced error handling
         if (error.message === "Network Error") {
-          const base = API_CONFIG.BASE_URL;
           setServerError(
-            `Network Error. Unable to reach API at ${base}.\n` +
-            `Please ensure the backend is running and CORS allows this origin.`
+            "Network Error: Unable to connect to the server. " +
+            "Please check your internet connection and try again."
           );
         } else {
           const errMsg = error.response?.data?.message || error.message || "Login failed.";

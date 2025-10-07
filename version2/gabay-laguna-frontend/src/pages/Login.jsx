@@ -61,7 +61,6 @@ const Login = () => {
               "Content-Type": "application/json",
               Accept: "application/json",
             },
-            withCredentials: false,
           }
         );
         const { user, token } = response.data;

@@ -155,16 +155,3 @@ Route::post('/webhooks/paymongo', [PaymentController::class, 'paymongoWebhook'])
 Route::get('/health', function () {
     return response()->json(['status' => 'healthy', 'timestamp' => now()]);
 });
-
-// CORS test endpoint
-Route::options('/cors-test', function () {
-    return response()->json(['message' => 'CORS preflight successful']);
-});
-
-Route::get('/cors-test', function () {
-    return response()->json([
-        'message' => 'CORS is working!',
-        'origin' => request()->header('Origin'),
-        'timestamp' => now()
-    ]);
-});

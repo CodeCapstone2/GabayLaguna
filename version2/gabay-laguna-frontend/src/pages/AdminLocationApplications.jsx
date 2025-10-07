@@ -1,5 +1,6 @@
 // Update your AdminLocationApplications component with these improvements
 import React, { useEffect, useState } from "react";
+import API_CONFIG from "../config/api";
 
 const AdminLocationApplications = () => {
   const [items, setItems] = useState([]);

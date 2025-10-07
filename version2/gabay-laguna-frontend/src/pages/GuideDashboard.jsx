@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_CONFIG from "../config/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const GuideDashboard = () => {
@@ -36,7 +37,7 @@ const GuideDashboard = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/guide/dashboard-stats",
+        `${API_CONFIG.BASE_URL}/api/guide/dashboard-stats`,
         {
           headers: {
             Accept: "application/json",
@@ -76,98 +77,97 @@ const GuideDashboard = () => {
   }
 
   return (
-    <div className="container py-5">
-      <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="container py-4">
+      <div className="d-flex justify-content-between align-items-center mb-5">
         <div>
-          <h2 className="fw-bold text-success">
-            🧭 Welcome, {user?.name || "Guide"}!
-          </h2>
-          <p className="text-muted mb-0">
+          <h1
+            className="fw-bold mb-3"
+            style={{ color: "var(--color-primary)" }}
+          >
+            Welcome back, {user?.name || "Guide"}!
+          </h1>
+          <p className="lead mb-0">
             Manage your tours, bookings, and profile information
           </p>
         </div>
-        <button
-          className="btn btn-outline-success"
-          onClick={loadGuideStats}
-          disabled={loading}
-        >
-          {loading ? "🔄 Loading..." : "🔄 Refresh Stats"}
-        </button>
-        <div>
+        <div className="d-flex gap-2">
           <button
-            className="btn btn-outline-primary me-2"
+            className="btn btn-outline-primary"
+            onClick={loadGuideStats}
+            disabled={loading}
+          >
+            <i className="fas fa-sync-alt me-2"></i>
+            {loading ? "Loading..." : "Refresh Stats"}
+          </button>
+          <button
+            className="btn btn-outline-primary"
             onClick={() => navigate("/guide-profile")}
           >
-            👤 View Profile
-          </button>
-          <button
-            className="btn btn-outline-success me-2"
-            onClick={() => navigate("/guide/location-applications")}
-          >
-            📍 Apply Locations
-          </button>
-          <button
-            className="btn btn-outline-warning me-2"
-            onClick={() => navigate("/guide/duty-locations")}
-          >
-            🎯 Duty Locations
-          </button>
-          <button
-            className="btn btn-outline-info"
-            onClick={() => navigate("/guide/spot-suggestions")}
-          >
-            🗺️ Suggest Spot
+            <i className="fas fa-user me-2"></i>
+            Profile
           </button>
         </div>
       </div>
 
-      <div className="row mb-4">
+      <div className="row g-4 mb-5">
         <div className="col-md-4">
-          <div className="card shadow-sm border-0 h-100">
-            <div className="card-body text-center">
-              <h5 className="card-title text-success">📋 Manage Bookings</h5>
-              <p className="card-text">
+          <div className="card h-100">
+            <div className="card-body text-center p-4">
+              <div className="mb-3">
+                <i className="fas fa-calendar-check fa-3x text-success"></i>
+              </div>
+              <h4 className="card-title mb-3">Manage Bookings</h4>
+              <p className="card-text mb-4">
                 View and respond to booking requests, manage your schedule, and
                 track tour status.
               </p>
               <button
-                className="btn btn-success"
+                className="btn btn-success btn-lg"
                 onClick={() => navigate("/guide-bookings")}
               >
+                <i className="fas fa-list me-2"></i>
                 View Bookings
               </button>
             </div>
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card shadow-sm border-0 h-100">
-            <div className="card-body text-center">
-              <h5 className="card-title text-warning">🎯 Duty Locations</h5>
-              <p className="card-text">
+          <div className="card h-100">
+            <div className="card-body text-center p-4">
+              <div className="mb-3">
+                <i className="fas fa-map-marker-alt fa-3x text-warning"></i>
+              </div>
+              <h4 className="card-title mb-3">Duty Locations</h4>
+              <p className="card-text mb-4">
                 Select cities and specific locations where you want to work as a
                 tour guide.
               </p>
               <button
-                className="btn btn-warning"
+                className="btn btn-warning btn-lg"
                 onClick={() => navigate("/guide/duty-locations")}
               >
+                <i className="fas fa-map me-2"></i>
                 Manage Locations
               </button>
             </div>
           </div>
         </div>
         <div className="col-md-4">
-          <div className="card shadow-sm border-0 h-100">
-            <div className="card-body text-center">
-              <h5 className="card-title text-primary">👤 Profile & Settings</h5>
-              <p className="card-text">
+          <div className="card h-100">
+            <div className="card-body text-center p-4">
+              <div className="mb-3">
+                <i className="fas fa-user-cog fa-3x text-primary"></i>
+              </div>
+              <h4 className="card-title mb-3">Profile & Settings</h4>
+              <p className="card-text mb-4">
                 Update your profile information, availability, and tour guide
                 preferences.
               </p>
               <button
-                className="btn btn-primary"
+                className="btn btn-primary btn-lg"
                 onClick={() => navigate("/guide-profile")}
               >
+                <i className="fas fa-edit me-2"></i>
                 Edit Profile
               </button>
             </div>

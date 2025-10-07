@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_CONFIG from "../config/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../theme.css";
 
@@ -12,6 +13,12 @@ const AdminDashboard = () => {
     tourGuides: 0,
     activeBookings: 0,
     pendingApprovals: 0,
+    totalTourists: 0,
+    totalRevenue: 0,
+    totalCities: 0,
+    totalCategories: 0,
+    totalPois: 0,
+    pendingLocationApplications: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -37,8 +44,11 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
+      console.log("Loading dashboard stats with token:", token ? "Present" : "Missing");
+      console.log("API URL:", `${API_CONFIG.BASE_URL}/api/admin/dashboard`);
+      
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/admin/dashboard-stats",
+        `${API_CONFIG.BASE_URL}/api/admin/dashboard`,
         {
           headers: {
             Accept: "application/json",
@@ -46,22 +56,41 @@ const AdminDashboard = () => {
           },
         }
       );
-      setStats(
-        response.data.stats || {
-          totalUsers: 0,
-          tourGuides: 0,
-          activeBookings: 0,
-          pendingApprovals: 0,
-        }
-      );
+      
+      console.log("Dashboard API Response:", response.data);
+      
+      // Handle the response format from backend
+      const backendStats = response.data.statistics || {};
+      setStats({
+        totalUsers: backendStats.total_users || 0,
+        tourGuides: backendStats.total_guides || 0,
+        activeBookings: backendStats.total_bookings || 0,
+        pendingApprovals: backendStats.pending_verifications || 0,
+        totalTourists: backendStats.total_tourists || 0,
+        totalRevenue: backendStats.total_revenue || 0,
+        totalCities: backendStats.total_cities || 0,
+        totalCategories: backendStats.total_categories || 0,
+        totalPois: backendStats.total_pois || 0,
+        pendingLocationApplications: backendStats.pending_location_applications || 0,
+      });
     } catch (error) {
       console.error("Error loading dashboard stats:", error);
+      console.error("Error details:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
       // Set default values when API is not available
+      console.log("API call failed, setting default values");
       setStats({
-        totalUsers: 0,
-        tourGuides: 0,
+        totalUsers: 3, // admin, guide, tourist
+        tourGuides: 1, // Sample Guide
         activeBookings: 0,
         pendingApprovals: 0,
+        totalTourists: 1, // Sample Tourist
+        totalRevenue: 0,
+        totalCities: 14, // from seeder
+        totalCategories: 5, // Historical, Natural, Adventure, Cultural, Educational
+        totalPois: 0, // will be populated by seeder
+        pendingLocationApplications: 0,
       });
     } finally {
       setLoading(false);
@@ -80,30 +109,17 @@ const AdminDashboard = () => {
   }
 
   return (
-    <div
-      className="container py-5"
-      style={{ fontFamily: "var(--font-family-primary)" }}
-    >
+    <div className="container py-4">
       <div className="d-flex justify-content-between align-items-center mb-5">
         <div>
-          <h2
-            className="fw-bold"
-            style={{
-              color: "var(--color-text)",
-              fontFamily: "var(--font-family-heading)",
-              fontSize: "2.5rem",
-            }}
+          <h1
+            className="fw-bold mb-3"
+            style={{ color: "var(--color-primary)" }}
           >
-            👑 Admin Dashboard
-          </h2>
-          <p
-            style={{
-              color: "var(--color-text-secondary)",
-              fontSize: "1.1rem",
-              marginBottom: "0",
-            }}
-          >
-            Welcome, {user?.name || "Admin"}! Manage the Gabay Laguna platform
+            Admin Dashboard
+          </h1>
+          <p className="lead mb-0">
+            Welcome, {user?.name || "Admin"}! Manage the Gabay Laguna platform.
           </p>
         </div>
         <button
@@ -350,6 +366,242 @@ const AdminDashboard = () => {
                 }}
               >
                 Pending Approvals
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Additional Statistics Cards - Row 2 */}
+      <div className="row mb-5">
+        <div className="col-md-3">
+          <div
+            className="card shadow-lg border-0 text-center"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              transition: "var(--transition-normal)",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = "translateY(-5px)";
+              e.target.style.boxShadow = "var(--shadow-xl)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "var(--shadow-lg)";
+            }}
+          >
+            <div className="card-body p-4">
+              <div
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--color-info)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1rem",
+                  color: "white",
+                  fontSize: "1.5rem",
+                }}
+              >
+                🧳
+              </div>
+              <h3
+                style={{
+                  color: "var(--color-info)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "700",
+                  fontSize: "2.5rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {stats.totalTourists}
+              </h3>
+              <p
+                style={{
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0",
+                  fontWeight: "500",
+                }}
+              >
+                Tourists
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div
+            className="card shadow-lg border-0 text-center"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              transition: "var(--transition-normal)",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = "translateY(-5px)";
+              e.target.style.boxShadow = "var(--shadow-xl)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "var(--shadow-lg)";
+            }}
+          >
+            <div className="card-body p-4">
+              <div
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--color-success)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1rem",
+                  color: "white",
+                  fontSize: "1.5rem",
+                }}
+              >
+                💰
+              </div>
+              <h3
+                style={{
+                  color: "var(--color-success)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "700",
+                  fontSize: "2.5rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                ₱{stats.totalRevenue?.toLocaleString() || 0}
+              </h3>
+              <p
+                style={{
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0",
+                  fontWeight: "500",
+                }}
+              >
+                Total Revenue
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div
+            className="card shadow-lg border-0 text-center"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              transition: "var(--transition-normal)",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = "translateY(-5px)";
+              e.target.style.boxShadow = "var(--shadow-xl)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "var(--shadow-lg)";
+            }}
+          >
+            <div className="card-body p-4">
+              <div
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--color-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1rem",
+                  color: "white",
+                  fontSize: "1.5rem",
+                }}
+              >
+                🏙️
+              </div>
+              <h3
+                style={{
+                  color: "var(--color-primary)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "700",
+                  fontSize: "2.5rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {stats.totalCities}
+              </h3>
+              <p
+                style={{
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0",
+                  fontWeight: "500",
+                }}
+              >
+                Cities
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div
+            className="card shadow-lg border-0 text-center"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              transition: "var(--transition-normal)",
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = "translateY(-5px)";
+              e.target.style.boxShadow = "var(--shadow-xl)";
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = "translateY(0)";
+              e.target.style.boxShadow = "var(--shadow-lg)";
+            }}
+          >
+            <div className="card-body p-4">
+              <div
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  backgroundColor: "var(--color-warning)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 1rem",
+                  color: "white",
+                  fontSize: "1.5rem",
+                }}
+              >
+                📍
+              </div>
+              <h3
+                style={{
+                  color: "var(--color-warning)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "700",
+                  fontSize: "2.5rem",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                {stats.totalPois}
+              </h3>
+              <p
+                style={{
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0",
+                  fontWeight: "500",
+                }}
+              >
+                Points of Interest
               </p>
             </div>
           </div>

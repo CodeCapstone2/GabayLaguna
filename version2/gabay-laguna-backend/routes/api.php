@@ -12,6 +12,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LocationApplicationController;
+use App\Http\Controllers\LocationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -48,6 +49,7 @@ Route::get('/guides', [TourGuideController::class, 'index']);
 Route::get('/guides/{guide}', [TourGuideController::class, 'show']);
 Route::get('/guides/search', [TourGuideController::class, 'search']);
 Route::get('/guides/{guide}/reviews', [ReviewController::class, 'getGuideReviews']);
+Route::get('/guides/{guide}/availability', [TourGuideController::class, 'getGuideAvailability']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -69,6 +71,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/reviews', [ReviewController::class, 'touristReviews']);
         Route::put('/reviews/{review}', [ReviewController::class, 'update']);
         Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
+
+        // Location tracking routes for tourists
+        Route::get('/bookings/{booking}/guide-location', [LocationController::class, 'getGuideLocation']);
+        Route::get('/bookings/{booking}/location-history', [LocationController::class, 'getLocationHistory']);
     });
 
     // Guide routes
@@ -91,11 +97,18 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/guide/location-applications', [LocationApplicationController::class, 'guideApplications']);
         Route::post('/guide/location-applications', [LocationApplicationController::class, 'store']);
+
+        // Location tracking routes for guides
+        Route::post('/guide/location/update', [LocationController::class, 'updateLocation']);
+        Route::get('/guide/active-bookings', [LocationController::class, 'getActiveBookings']);
+        Route::post('/guide/bookings/{booking}/start-tracking', [LocationController::class, 'startTracking']);
+        Route::post('/guide/bookings/{booking}/stop-tracking', [LocationController::class, 'stopTracking']);
     });
 
     // Admin routes
     Route::middleware('admin')->group(function () {
-        Route::get('/admin/dashboard', [AdminController::class, 'Admindashboard']);
+        Route::get('/admin/dashboard', [AdminController::class, 'dashboard']);
+        Route::get('/admin/reports', [AdminController::class, 'reports']);
         Route::get('/admin/users', [AdminController::class, 'users']);
         Route::get('/admin/guides', [AdminController::class, 'guides']);
         Route::get('/admin/bookings', [AdminController::class, 'bookings']);

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import API_CONFIG from "../config/api";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const POIGuides = () => {
   const { poiId } = useParams();
@@ -9,7 +10,7 @@ const POIGuides = () => {
   const [poi, setPoi] = useState(location.state?.poi || {});
   const [city, setCity] = useState(location.state?.city || {});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchGuides();
@@ -21,20 +22,22 @@ const POIGuides = () => {
   const fetchGuides = async () => {
     try {
       setLoading(true);
-      setError('');
-      const response = await fetch(`http://127.0.0.1:8000/api/pois/${poiId}/guides`);
-      
+      setError("");
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/api/pois/${poiId}/guides`
+      );
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setGuides(data.guides || []);
       if (data.poi) setPoi(data.poi);
     } catch (error) {
-      console.error('Error fetching guides:', error);
-      setError('Failed to load guides. Please try again later.');
-      
+      console.error("Error fetching guides:", error);
+      setError("Failed to load guides. Please try again later.");
+
       // Fallback: Use demo data
       setGuides(getDemoGuides());
     } finally {
@@ -44,11 +47,11 @@ const POIGuides = () => {
 
   const fetchPoiData = async () => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/pois/${poiId}`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/pois/${poiId}`);
       const data = await response.json();
       setPoi(data.poi || data);
     } catch (error) {
-      console.error('Error fetching POI data:', error);
+      console.error("Error fetching POI data:", error);
     }
   };
 
@@ -57,33 +60,33 @@ const POIGuides = () => {
     return [
       {
         id: 1,
-        user: { name: 'John Doe', email: 'john@example.com' },
+        user: { name: "John Doe", email: "john@example.com" },
         hourly_rate: 500,
         experience_years: 3,
-        bio: 'Experienced tour guide with knowledge of local history',
-        languages: 'English, Tagalog',
-        rating: 4.5
+        bio: "Experienced tour guide with knowledge of local history",
+        languages: "English, Tagalog",
+        rating: 4.5,
       },
       {
         id: 2,
-        user: { name: 'Maria Santos', email: 'maria@example.com' },
+        user: { name: "Maria Santos", email: "maria@example.com" },
         hourly_rate: 600,
         experience_years: 5,
-        bio: 'Professional guide specializing in cultural tours',
-        languages: 'English, Spanish, Tagalog',
-        rating: 4.8
-      }
+        bio: "Professional guide specializing in cultural tours",
+        languages: "English, Spanish, Tagalog",
+        rating: 4.8,
+      },
     ];
   };
 
   const handleBookGuide = (guide) => {
     // Use the new route format: /booking/:guideId/:poiId
-    navigate(`/booking/${guide.id}/${poiId}`, { 
-      state: { 
+    navigate(`/booking/${guide.id}/${poiId}`, {
+      state: {
         poi: poi,
         city: city,
-        guide: guide
-      }
+        guide: guide,
+      },
     });
   };
 
@@ -110,8 +113,10 @@ const POIGuides = () => {
         ← Back to POIs
       </button>
 
-      <h2 className="mb-4">Available Guides for {poi.name || `POI ${poiId}`}</h2>
-      
+      <h2 className="mb-4">
+        Available Guides for {poi.name || `POI ${poiId}`}
+      </h2>
+
       {error && (
         <div className="alert alert-warning" role="alert">
           {error}
@@ -119,7 +124,7 @@ const POIGuides = () => {
           <small>Showing demo data for preview purposes.</small>
         </div>
       )}
-      
+
       {guides.length === 0 ? (
         <div className="text-center py-5">
           <div className="alert alert-info">
@@ -129,22 +134,24 @@ const POIGuides = () => {
         </div>
       ) : (
         <div className="row">
-          {guides.map(guide => (
+          {guides.map((guide) => (
             <div key={guide.id} className="col-md-6 col-lg-4 mb-4">
               <div className="card h-100 shadow-sm">
-                <img 
-                  src={guide.user?.profile_picture || '/assets/default-guide.jpg'} 
-                  className="card-img-top" 
+                <img
+                  src={
+                    guide.user?.profile_picture || "/assets/default-guide.jpg"
+                  }
+                  className="card-img-top"
                   alt={guide.user?.name}
-                  style={{ height: '200px', objectFit: 'cover' }}
+                  style={{ height: "200px", objectFit: "cover" }}
                   onError={(e) => {
-                    e.target.src = '/assets/default-guide.jpg';
+                    e.target.src = "/assets/default-guide.jpg";
                   }}
                 />
                 <div className="card-body">
                   <h5 className="card-title">{guide.user?.name}</h5>
                   <p className="text-muted">{guide.user?.email}</p>
-                  
+
                   <div className="mb-3">
                     <span className="badge bg-success me-2">
                       ₱{guide.hourly_rate}/hour
@@ -154,9 +161,7 @@ const POIGuides = () => {
                     </span>
                   </div>
 
-                  {guide.bio && (
-                    <p className="card-text">{guide.bio}</p>
-                  )}
+                  {guide.bio && <p className="card-text">{guide.bio}</p>}
 
                   {guide.languages && (
                     <p className="small text-muted">
@@ -170,7 +175,7 @@ const POIGuides = () => {
                     </p>
                   )}
 
-                  <button 
+                  <button
                     className="btn btn-primary w-100"
                     onClick={() => handleBookGuide(guide)}
                   >

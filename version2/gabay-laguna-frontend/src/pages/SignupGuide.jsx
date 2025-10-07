@@ -1,7 +1,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaIdCard, FaStar, FaLock, FaEye, FaEyeSlash, FaUserPlus, FaArrowLeft, FaSignInAlt, FaFileUpload, FaExclamationTriangle } from "react-icons/fa";
+import API_CONFIG from "../config/api";
+import {
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaMapMarkerAlt,
+  FaIdCard,
+  FaStar,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaUserPlus,
+  FaArrowLeft,
+  FaSignInAlt,
+  FaFileUpload,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 
 const SignupGuide = () => {
   const [form, setForm] = useState({
@@ -74,7 +90,7 @@ const SignupGuide = () => {
         formData.append("certificate", certificate);
 
         const res = await axios.post(
-          "http://127.0.0.1:8000/api/guide/register",
+          `${API_CONFIG.BASE_URL}/api/guide/register`,
           formData,
           {
             headers: {
@@ -98,27 +114,38 @@ const SignupGuide = () => {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center" style={{
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '2rem 0'
-    }}>
+    <div
+      className="min-vh-100 d-flex align-items-center"
+      style={{
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        padding: "2rem 0",
+      }}
+    >
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-lg-7 col-md-9">
             {/* Header */}
             <div className="text-center mb-4">
-              <div className="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mb-3" style={{ width: '80px', height: '80px' }}>
-                <FaUserPlus size={40} style={{ color: '#667eea' }} />
+              <div
+                className="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mb-3"
+                style={{ width: "80px", height: "80px" }}
+              >
+                <FaUserPlus size={40} style={{ color: "#667eea" }} />
               </div>
               <h2 className="text-white fw-bold mb-2">Join as a Tour Guide</h2>
-              <p className="text-white-50 mb-0">Share your expertise and help tourists explore Laguna</p>
+              <p className="text-white-50 mb-0">
+                Share your expertise and help tourists explore Laguna
+              </p>
             </div>
 
             {/* Signup Form Card */}
             <div className="card border-0 shadow-lg">
               <div className="card-body p-4 p-md-5">
                 {serverMessage && (
-                  <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  <div
+                    className="alert alert-danger d-flex align-items-center"
+                    role="alert"
+                  >
                     <div className="me-2">⚠️</div>
                     <div>{serverMessage}</div>
                   </div>
@@ -127,13 +154,18 @@ const SignupGuide = () => {
                 <form onSubmit={handleSubmit} noValidate>
                   {/* Full Name Field */}
                   <div className="mb-4">
-                    <label htmlFor="fullName" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="fullName"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaUser className="me-2" />
                       Full Name
                     </label>
                     <input
                       type="text"
-                      className={`form-control form-control-lg ${errors.fullName ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.fullName ? "is-invalid" : ""
+                      }`}
                       id="fullName"
                       value={form.fullName}
                       onChange={handleChange}
@@ -147,13 +179,18 @@ const SignupGuide = () => {
 
                   {/* Email Field */}
                   <div className="mb-4">
-                    <label htmlFor="email" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="email"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaEnvelope className="me-2" />
                       Email Address
                     </label>
                     <input
                       type="email"
-                      className={`form-control form-control-lg ${errors.email ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.email ? "is-invalid" : ""
+                      }`}
                       id="email"
                       value={form.email}
                       onChange={handleChange}
@@ -167,13 +204,18 @@ const SignupGuide = () => {
 
                   {/* Contact Field */}
                   <div className="mb-4">
-                    <label htmlFor="contact" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="contact"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaPhone className="me-2" />
                       Contact Number
                     </label>
                     <input
                       type="tel"
-                      className={`form-control form-control-lg ${errors.contact ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.contact ? "is-invalid" : ""
+                      }`}
                       id="contact"
                       value={form.contact}
                       onChange={handleChange}
@@ -187,12 +229,17 @@ const SignupGuide = () => {
 
                   {/* Address Field */}
                   <div className="mb-4">
-                    <label htmlFor="address" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="address"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaMapMarkerAlt className="me-2" />
                       Address
                     </label>
                     <textarea
-                      className={`form-control form-control-lg ${errors.address ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.address ? "is-invalid" : ""
+                      }`}
                       id="address"
                       value={form.address}
                       onChange={handleChange}
@@ -207,13 +254,18 @@ const SignupGuide = () => {
 
                   {/* License Number Field */}
                   <div className="mb-4">
-                    <label htmlFor="licenseNumber" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="licenseNumber"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaIdCard className="me-2" />
                       License Number
                     </label>
                     <input
                       type="text"
-                      className={`form-control form-control-lg ${errors.licenseNumber ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.licenseNumber ? "is-invalid" : ""
+                      }`}
                       id="licenseNumber"
                       value={form.licenseNumber}
                       onChange={handleChange}
@@ -221,19 +273,26 @@ const SignupGuide = () => {
                       required
                     />
                     {errors.licenseNumber && (
-                      <div className="invalid-feedback">{errors.licenseNumber}</div>
+                      <div className="invalid-feedback">
+                        {errors.licenseNumber}
+                      </div>
                     )}
                   </div>
 
                   {/* Experience Field */}
                   <div className="mb-4">
-                    <label htmlFor="experience" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="experience"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaStar className="me-2" />
                       Years of Experience
                     </label>
                     <input
                       type="number"
-                      className={`form-control form-control-lg ${errors.experience ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.experience ? "is-invalid" : ""
+                      }`}
                       id="experience"
                       value={form.experience}
                       onChange={handleChange}
@@ -242,20 +301,27 @@ const SignupGuide = () => {
                       required
                     />
                     {errors.experience && (
-                      <div className="invalid-feedback">{errors.experience}</div>
+                      <div className="invalid-feedback">
+                        {errors.experience}
+                      </div>
                     )}
                   </div>
 
                   {/* Password Field */}
                   <div className="mb-4">
-                    <label htmlFor="password" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="password"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaLock className="me-2" />
                       Password
                     </label>
                     <div className="input-group">
                       <input
                         type={showPassword ? "text" : "password"}
-                        className={`form-control form-control-lg ${errors.password ? "is-invalid" : ""}`}
+                        className={`form-control form-control-lg ${
+                          errors.password ? "is-invalid" : ""
+                        }`}
                         id="password"
                         value={form.password}
                         onChange={handleChange}
@@ -266,26 +332,33 @@ const SignupGuide = () => {
                         type="button"
                         className="btn btn-outline-secondary"
                         onClick={() => setShowPassword(!showPassword)}
-                        style={{ borderLeft: 'none' }}
+                        style={{ borderLeft: "none" }}
                       >
                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
                       {errors.password && (
-                        <div className="invalid-feedback">{errors.password}</div>
+                        <div className="invalid-feedback">
+                          {errors.password}
+                        </div>
                       )}
                     </div>
                   </div>
 
                   {/* Confirm Password Field */}
                   <div className="mb-4">
-                    <label htmlFor="confirmPassword" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="confirmPassword"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaLock className="me-2" />
                       Confirm Password
                     </label>
                     <div className="input-group">
                       <input
                         type={showConfirmPassword ? "text" : "password"}
-                        className={`form-control form-control-lg ${errors.confirmPassword ? "is-invalid" : ""}`}
+                        className={`form-control form-control-lg ${
+                          errors.confirmPassword ? "is-invalid" : ""
+                        }`}
                         id="confirmPassword"
                         value={form.confirmPassword}
                         onChange={handleChange}
@@ -295,33 +368,44 @@ const SignupGuide = () => {
                       <button
                         type="button"
                         className="btn btn-outline-secondary"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        style={{ borderLeft: 'none' }}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        style={{ borderLeft: "none" }}
                       >
                         {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
                       {errors.confirmPassword && (
-                        <div className="invalid-feedback">{errors.confirmPassword}</div>
+                        <div className="invalid-feedback">
+                          {errors.confirmPassword}
+                        </div>
                       )}
                     </div>
                   </div>
 
                   {/* Certificate Upload Field */}
                   <div className="mb-4">
-                    <label htmlFor="certificate" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="certificate"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaFileUpload className="me-2" />
                       Upload Certificate
                     </label>
                     <input
                       type="file"
-                      className={`form-control form-control-lg ${errors.certificate ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.certificate ? "is-invalid" : ""
+                      }`}
                       id="certificate"
                       accept="application/pdf,image/jpeg,image/png"
                       onChange={(e) => setCertificate(e.target.files[0])}
                       required
                     />
                     {errors.certificate && (
-                      <div className="invalid-feedback">{errors.certificate}</div>
+                      <div className="invalid-feedback">
+                        {errors.certificate}
+                      </div>
                     )}
                     <small className="text-muted">
                       Accepted formats: PDF, JPEG, PNG (Max size: 5MB)
@@ -329,27 +413,37 @@ const SignupGuide = () => {
                   </div>
 
                   {/* Verification Notice */}
-                  <div className="alert alert-warning d-flex align-items-start" role="alert">
+                  <div
+                    className="alert alert-warning d-flex align-items-start"
+                    role="alert"
+                  >
                     <FaExclamationTriangle className="me-2 mt-1" />
                     <div>
-                      <strong>Verification Required:</strong> Your account will require verification by the admin before you can log in. This process typically takes 24-48 hours.
+                      <strong>Verification Required:</strong> Your account will
+                      require verification by the admin before you can log in.
+                      This process typically takes 24-48 hours.
                     </div>
                   </div>
 
                   {/* Submit Button */}
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="btn btn-primary btn-lg w-100 mb-4 fw-semibold"
                     disabled={isLoading}
                     style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      border: 'none',
-                      padding: '0.75rem 1.5rem'
+                      background:
+                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                      border: "none",
+                      padding: "0.75rem 1.5rem",
                     }}
                   >
                     {isLoading ? (
                       <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
                         Creating Account...
                       </>
                     ) : (

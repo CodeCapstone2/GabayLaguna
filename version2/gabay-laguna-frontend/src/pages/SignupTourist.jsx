@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from "react";
+import API_CONFIG from "../config/api";
 import { useNavigate } from "react-router-dom";
-import { FaUser, FaEnvelope, FaPhone, FaGlobe, FaLock, FaEye, FaEyeSlash, FaUserPlus, FaArrowLeft, FaSignInAlt } from "react-icons/fa";
+import {
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaGlobe,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaUserPlus,
+  FaArrowLeft,
+  FaSignInAlt,
+} from "react-icons/fa";
 
 const SignupTourist = () => {
   const [form, setForm] = useState({
@@ -66,7 +78,7 @@ const SignupTourist = () => {
     setIsLoading(true);
     try {
       // Call the Laravel API to register the user
-      const response = await fetch("http://127.0.0.1:8000/api/register", {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -113,20 +125,28 @@ const SignupTourist = () => {
   };
 
   return (
-    <div className="min-vh-100 d-flex align-items-center" style={{
-      background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-      padding: '2rem 0'
-    }}>
+    <div
+      className="min-vh-100 d-flex align-items-center"
+      style={{
+        background: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+        padding: "2rem 0",
+      }}
+    >
       <div className="container">
         <div className="row justify-content-center">
           <div className="col-lg-6 col-md-8">
             {/* Header */}
             <div className="text-center mb-4">
-              <div className="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mb-3" style={{ width: '80px', height: '80px' }}>
-                <FaUserPlus size={40} style={{ color: '#11998e' }} />
+              <div
+                className="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mb-3"
+                style={{ width: "80px", height: "80px" }}
+              >
+                <FaUserPlus size={40} style={{ color: "#11998e" }} />
               </div>
               <h2 className="text-white fw-bold mb-2">Join as a Tourist</h2>
-              <p className="text-white-50 mb-0">Start your adventure in Laguna today</p>
+              <p className="text-white-50 mb-0">
+                Start your adventure in Laguna today
+              </p>
             </div>
 
             {/* Signup Form Card */}
@@ -135,13 +155,18 @@ const SignupTourist = () => {
                 <form onSubmit={handleSubmit} noValidate>
                   {/* Full Name Field */}
                   <div className="mb-4">
-                    <label htmlFor="fullName" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="fullName"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaUser className="me-2" />
                       Full Name
                     </label>
                     <input
                       type="text"
-                      className={`form-control form-control-lg ${errors.fullName ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.fullName ? "is-invalid" : ""
+                      }`}
                       id="fullName"
                       value={form.fullName}
                       onChange={handleChange}
@@ -155,13 +180,18 @@ const SignupTourist = () => {
 
                   {/* Email Field */}
                   <div className="mb-4">
-                    <label htmlFor="email" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="email"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaEnvelope className="me-2" />
                       Email Address
                     </label>
                     <input
                       type="email"
-                      className={`form-control form-control-lg ${errors.email ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.email ? "is-invalid" : ""
+                      }`}
                       id="email"
                       value={form.email}
                       onChange={handleChange}
@@ -175,13 +205,18 @@ const SignupTourist = () => {
 
                   {/* Phone Field */}
                   <div className="mb-4">
-                    <label htmlFor="phone" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="phone"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaPhone className="me-2" />
                       Phone Number
                     </label>
                     <input
                       type="tel"
-                      className={`form-control form-control-lg ${errors.phone ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.phone ? "is-invalid" : ""
+                      }`}
                       id="phone"
                       value={form.phone}
                       onChange={handleChange}
@@ -195,13 +230,18 @@ const SignupTourist = () => {
 
                   {/* Nationality Field */}
                   <div className="mb-4">
-                    <label htmlFor="nationality" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="nationality"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaGlobe className="me-2" />
                       Nationality
                     </label>
                     <input
                       type="text"
-                      className={`form-control form-control-lg ${errors.nationality ? "is-invalid" : ""}`}
+                      className={`form-control form-control-lg ${
+                        errors.nationality ? "is-invalid" : ""
+                      }`}
                       id="nationality"
                       value={form.nationality}
                       onChange={handleChange}
@@ -209,20 +249,27 @@ const SignupTourist = () => {
                       required
                     />
                     {errors.nationality && (
-                      <div className="invalid-feedback">{errors.nationality}</div>
+                      <div className="invalid-feedback">
+                        {errors.nationality}
+                      </div>
                     )}
                   </div>
 
                   {/* Password Field */}
                   <div className="mb-4">
-                    <label htmlFor="password" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="password"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaLock className="me-2" />
                       Password
                     </label>
                     <div className="input-group">
                       <input
                         type={showPassword ? "text" : "password"}
-                        className={`form-control form-control-lg ${errors.password ? "is-invalid" : ""}`}
+                        className={`form-control form-control-lg ${
+                          errors.password ? "is-invalid" : ""
+                        }`}
                         id="password"
                         value={form.password}
                         onChange={handleChange}
@@ -233,29 +280,37 @@ const SignupTourist = () => {
                         type="button"
                         className="btn btn-outline-secondary"
                         onClick={() => setShowPassword(!showPassword)}
-                        style={{ borderLeft: 'none' }}
+                        style={{ borderLeft: "none" }}
                       >
                         {showPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
                       {errors.password && (
-                        <div className="invalid-feedback">{errors.password}</div>
+                        <div className="invalid-feedback">
+                          {errors.password}
+                        </div>
                       )}
                     </div>
                     <small className="text-muted">
-                      Must be at least 6 characters with a capital letter and number
+                      Must be at least 6 characters with a capital letter and
+                      number
                     </small>
                   </div>
 
                   {/* Confirm Password Field */}
                   <div className="mb-4">
-                    <label htmlFor="confirmPassword" className="form-label fw-semibold text-muted">
+                    <label
+                      htmlFor="confirmPassword"
+                      className="form-label fw-semibold text-muted"
+                    >
                       <FaLock className="me-2" />
                       Confirm Password
                     </label>
                     <div className="input-group">
                       <input
                         type={showConfirmPassword ? "text" : "password"}
-                        className={`form-control form-control-lg ${errors.confirmPassword ? "is-invalid" : ""}`}
+                        className={`form-control form-control-lg ${
+                          errors.confirmPassword ? "is-invalid" : ""
+                        }`}
                         id="confirmPassword"
                         value={form.confirmPassword}
                         onChange={handleChange}
@@ -265,31 +320,40 @@ const SignupTourist = () => {
                       <button
                         type="button"
                         className="btn btn-outline-secondary"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        style={{ borderLeft: 'none' }}
+                        onClick={() =>
+                          setShowConfirmPassword(!showConfirmPassword)
+                        }
+                        style={{ borderLeft: "none" }}
                       >
                         {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
                       {errors.confirmPassword && (
-                        <div className="invalid-feedback">{errors.confirmPassword}</div>
+                        <div className="invalid-feedback">
+                          {errors.confirmPassword}
+                        </div>
                       )}
                     </div>
                   </div>
 
                   {/* Submit Button */}
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="btn btn-success btn-lg w-100 mb-4 fw-semibold"
                     disabled={isLoading}
                     style={{
-                      background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-                      border: 'none',
-                      padding: '0.75rem 1.5rem'
+                      background:
+                        "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+                      border: "none",
+                      padding: "0.75rem 1.5rem",
                     }}
                   >
                     {isLoading ? (
                       <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span
+                          className="spinner-border spinner-border-sm me-2"
+                          role="status"
+                          aria-hidden="true"
+                        ></span>
                         Creating Account...
                       </>
                     ) : (

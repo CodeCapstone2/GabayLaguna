@@ -94,6 +94,17 @@ class BookingController extends Controller
             'total_amount' => $totalAmount,
         ]);
 
+        // Notify guide of new booking request
+        try {
+            app(\App\Services\NotificationService::class)->sendBookingConfirmation($booking);
+        } catch (\Exception $e) {
+            // Log and continue without failing booking creation
+            \Log::warning('Booking created but notification failed', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json([
             'message' => 'Booking created successfully',
             'booking' => $booking->load(['tourGuide.user', 'pointOfInterest'])

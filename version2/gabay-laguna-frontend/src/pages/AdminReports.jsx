@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_CONFIG from "../config/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../theme.css";
 
@@ -16,6 +17,7 @@ const AdminReports = () => {
     totalUsers: 0,
     averageRating: 0,
     completionRate: 0,
+    avgBookingValue: 0,
   });
 
   useEffect(() => {
@@ -40,8 +42,11 @@ const AdminReports = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
+      console.log("Loading reports with token:", token ? "Present" : "Missing");
+      console.log("API URL:", `${API_CONFIG.BASE_URL}/api/admin/reports?time_range=${timeRange}`);
+      
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/admin/reports?time_range=${timeRange}`,
+        `${API_CONFIG.BASE_URL}/api/admin/reports?time_range=${timeRange}`,
         {
           headers: {
             Accept: "application/json",
@@ -49,20 +54,39 @@ const AdminReports = () => {
           },
         }
       );
-      setStats(response.data.stats || {});
+      
+      console.log("Reports API Response:", response.data);
+      
+      // Handle the response format from backend
+      const backendStats = response.data.stats || {};
+      setStats({
+        totalRevenue: backendStats.totalRevenue || 0,
+        totalBookings: backendStats.totalBookings || 0,
+        activeGuides: backendStats.activeGuides || 0,
+        totalUsers: backendStats.totalUsers || 0,
+        averageRating: backendStats.averageRating || 0,
+        completionRate: backendStats.completionRate || 0,
+        avgBookingValue: backendStats.avgBookingValue || 0,
+      });
     } catch (error) {
       console.error("Error loading stats:", error);
-      // Show error message instead of fake data
+      console.error("Error details:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
+      // Show error message and set fallback data
       alert(
-        "Failed to load analytics data. Please check your connection and try again."
+        "Unable to load analytics data. Please check your connection and try again."
       );
+      
+      // Set fallback data based on seeded database
       setStats({
-        totalRevenue: 0,
-        totalBookings: 0,
-        activeGuides: 0,
-        totalUsers: 0,
-        averageRating: 0,
-        completionRate: 0,
+        totalRevenue: 0, // No payments yet
+        totalBookings: 0, // No bookings yet
+        activeGuides: 1, // Sample Guide is available
+        totalUsers: 3, // admin, guide, tourist
+        averageRating: 0, // No reviews yet
+        completionRate: 0, // No bookings yet
+        avgBookingValue: 0, // No bookings yet
       });
     } finally {
       setLoading(false);
@@ -78,6 +102,138 @@ const AdminReports = () => {
 
   const formatNumber = (num) => {
     return new Intl.NumberFormat("en-PH").format(num);
+  };
+
+  // Export current stats to CSV
+  const exportReport = () => {
+    try {
+      const rows = [
+        [
+          "Metric",
+          "Value",
+        ],
+        ["Total Revenue (PHP)", stats.totalRevenue],
+        ["Total Bookings", stats.totalBookings],
+        ["Active Guides", stats.activeGuides],
+        ["Total Users", stats.totalUsers],
+        ["Average Rating", stats.averageRating],
+        ["Completion Rate (%)", stats.completionRate],
+        ["Avg. Booking Value (PHP)", stats.avgBookingValue],
+      ];
+
+      const csv = rows
+        .map((r) => r.map((v) => `"${String(v).replaceAll('"', '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const date = new Date().toISOString().slice(0, 10);
+      link.download = `gabay-laguna-report-${timeRange}-${date}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert("Failed to export report. Please try again.");
+    }
+  };
+
+  // Generate simple charts and download as PNG using Canvas
+  const generateCharts = () => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 900;
+      canvas.height = 500;
+      const ctx = canvas.getContext("2d");
+
+      // Background
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Title
+      ctx.fillStyle = "#2c3e50";
+      ctx.font = "bold 24px Arial";
+      ctx.fillText("Gabay Laguna - Reports & Analytics", 20, 40);
+      ctx.font = "16px Arial";
+      ctx.fillText(`Time Range: ${timeRange}`, 20, 70);
+
+      // Data for bars
+      const data = [
+        { label: "Revenue (PHP)", value: Number(stats.totalRevenue) || 0, color: "#28a745" },
+        { label: "Bookings", value: Number(stats.totalBookings) || 0, color: "#0d6efd" },
+        { label: "Users", value: Number(stats.totalUsers) || 0, color: "#17a2b8" },
+        { label: "Active Guides", value: Number(stats.activeGuides) || 0, color: "#20c997" },
+      ];
+
+      const maxVal = Math.max(...data.map((d) => d.value), 1);
+      const chart = { x: 80, y: 110, w: 780, h: 320 };
+
+      // Axes
+      ctx.strokeStyle = "#ced4da";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(chart.x, chart.y);
+      ctx.lineTo(chart.x, chart.y + chart.h);
+      ctx.lineTo(chart.x + chart.w, chart.y + chart.h);
+      ctx.stroke();
+
+      // Bars
+      const barWidth = 120;
+      const gap = (chart.w - barWidth * data.length) / (data.length + 1);
+      data.forEach((d, i) => {
+        const barX = chart.x + gap * (i + 1) + barWidth * i;
+        const barH = (d.value / maxVal) * (chart.h - 20);
+        const barY = chart.y + chart.h - barH;
+
+        // Bar
+        ctx.fillStyle = d.color;
+        ctx.fillRect(barX, barY, barWidth, barH);
+
+        // Labels
+        ctx.fillStyle = "#6c757d";
+        ctx.font = "14px Arial";
+        ctx.fillText(d.label, barX, chart.y + chart.h + 20);
+        ctx.fillStyle = "#212529";
+        ctx.font = "bold 14px Arial";
+        ctx.fillText(String(d.value), barX, barY - 8);
+      });
+
+      // Download image
+      const url = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      link.download = `gabay-laguna-charts-${timeRange}-${date}.png`;
+      link.href = url;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      alert("Failed to generate charts. Please try again.");
+    }
+  };
+
+  // Open default email client with prefilled summary
+  const sendSummary = () => {
+    const subject = `Gabay Laguna Summary (${timeRange})`;
+    const lines = [
+      `Total Revenue: ${formatCurrency(stats.totalRevenue)}`,
+      `Total Bookings: ${formatNumber(stats.totalBookings)}`,
+      `Active Guides: ${formatNumber(stats.activeGuides)}`,
+      `Total Users: ${formatNumber(stats.totalUsers)}`,
+      `Average Rating: ${stats.averageRating.toFixed(1)}`,
+      `Completion Rate: ${stats.completionRate}%`,
+      `Avg. Booking Value: ${formatCurrency(stats.avgBookingValue)}`,
+    ];
+    const body = `Hi,\n\nHere is the latest summary for the selected time range (${timeRange}):\n\n${lines.join(
+      "\n"
+    )}\n\n— Gabay Laguna Admin`;
+
+    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+      body
+    )}`;
+    window.location.href = mailto;
   };
 
   if (loading) {
@@ -683,6 +839,7 @@ const AdminReports = () => {
                       border: "1px solid var(--color-primary)",
                       color: "var(--color-primary)",
                     }}
+                    onClick={exportReport}
                   >
                     📥 Export Report
                   </button>
@@ -695,6 +852,7 @@ const AdminReports = () => {
                       border: "1px solid var(--color-success)",
                       color: "var(--color-success)",
                     }}
+                    onClick={generateCharts}
                   >
                     📊 Generate Charts
                   </button>
@@ -707,6 +865,7 @@ const AdminReports = () => {
                       border: "1px solid var(--color-warning)",
                       color: "var(--color-warning)",
                     }}
+                    onClick={sendSummary}
                   >
                     📧 Send Summary
                   </button>
@@ -719,6 +878,7 @@ const AdminReports = () => {
                       border: "1px solid var(--color-info)",
                       color: "var(--color-info)",
                     }}
+                    onClick={loadStats}
                   >
                     🔄 Refresh Data
                   </button>

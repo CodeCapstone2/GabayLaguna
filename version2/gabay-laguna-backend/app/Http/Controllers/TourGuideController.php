@@ -153,6 +153,36 @@ class TourGuideController extends Controller
     }
 
     /**
+     * Get guide availability for public viewing (tourists)
+     */
+    public function getGuideAvailability($guideId)
+    {
+        $guide = TourGuide::findOrFail($guideId);
+        
+        $availabilities = $guide->availabilities()
+            ->where('is_available', true)
+            ->orderBy('day_of_week')
+            ->orderBy('start_time')
+            ->get();
+
+        return response()->json([
+            'guide' => [
+                'id' => $guide->id,
+                'name' => $guide->user->name,
+                'hourly_rate' => $guide->hourly_rate,
+                'is_verified' => $guide->is_verified,
+            ],
+            'availabilities' => $availabilities->map(function ($availability) {
+                return [
+                    'day_of_week' => $availability->day_of_week,
+                    'start_time' => $availability->start_time,
+                    'end_time' => $availability->end_time,
+                ];
+            })
+        ]);
+    }
+
+    /**
      * Set guide availability
      */
     public function setAvailability(Request $request)

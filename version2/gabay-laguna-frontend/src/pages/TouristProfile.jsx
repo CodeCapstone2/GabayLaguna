@@ -1,6 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaPhone, FaGlobe, FaEdit, FaSave, FaTimes, FaCamera, FaMapMarkerAlt, FaCalendarAlt, FaStar } from 'react-icons/fa';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  FaUser,
+  FaEnvelope,
+  FaPhone,
+  FaGlobe,
+  FaEdit,
+  FaSave,
+  FaTimes,
+  FaCamera,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaStar,
+} from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const TouristProfile = () => {
@@ -17,11 +29,13 @@ const TouristProfile = () => {
         const userObj = JSON.parse(userData);
         setUser(userObj);
         setEditForm({
-          name: userObj.name || '',
-          email: userObj.email || '',
-          phone: userObj.phone || '',
-          nationality: userObj.nationality || 'Filipino',
-          bio: userObj.bio || 'Passionate traveler exploring the beautiful province of Laguna.'
+          name: userObj.name || "",
+          email: userObj.email || "",
+          phone: userObj.phone || "",
+          nationality: userObj.nationality || "Filipino",
+          bio:
+            userObj.bio ||
+            "Passionate traveler exploring the beautiful province of Laguna.",
         });
       } catch (error) {
         console.error("Error parsing user data:", error);
@@ -47,11 +61,13 @@ const TouristProfile = () => {
 
   const handleCancel = () => {
     setEditForm({
-      name: user.name || '',
-      email: user.email || '',
-      phone: user.phone || '',
-      nationality: user.nationality || 'Filipino',
-      bio: user.bio || 'Passionate traveler exploring the beautiful province of Laguna.'
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      nationality: user.nationality || "Filipino",
+      bio:
+        user.bio ||
+        "Passionate traveler exploring the beautiful province of Laguna.",
     });
     setIsEditing(false);
   };
@@ -91,33 +107,45 @@ const TouristProfile = () => {
                     src={profileImage || "/assets/logo.png"}
                     alt="Profile"
                     className="rounded-circle"
-                    style={{ width: '120px', height: '120px', objectFit: "cover" }}
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      objectFit: "cover",
+                    }}
                   />
                   {isEditing && (
-                    <label className="position-absolute bottom-0 end-0 bg-success text-white rounded-circle p-2" style={{ cursor: 'pointer' }}>
+                    <label
+                      className="position-absolute bottom-0 end-0 bg-success text-white rounded-circle p-2"
+                      style={{ cursor: "pointer" }}
+                    >
                       <FaCamera size={16} />
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handleImageChange}
-                        style={{ display: 'none' }}
+                        style={{ display: "none" }}
                       />
                     </label>
                   )}
                 </div>
                 <div className="flex-grow-1">
-                  <h2 className="fw-bold text-success mb-2">
+                  <h1
+                    className="fw-bold mb-3"
+                    style={{ color: "var(--color-primary)" }}
+                  >
                     {isEditing ? (
                       <input
                         type="text"
                         className="form-control form-control-lg"
                         value={editForm.name}
-                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, name: e.target.value })
+                        }
                       />
                     ) : (
                       user.name
                     )}
-                  </h2>
+                  </h1>
                   <p className="text-muted mb-1">
                     <FaEnvelope className="me-2" />
                     {isEditing ? (
@@ -125,7 +153,9 @@ const TouristProfile = () => {
                         type="email"
                         className="form-control"
                         value={editForm.email}
-                        onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, email: e.target.value })
+                        }
                       />
                     ) : (
                       user.email
@@ -134,16 +164,28 @@ const TouristProfile = () => {
                   <div className="d-flex gap-2 mt-3">
                     {isEditing ? (
                       <>
-                        <button className="btn btn-success" onClick={handleSave}>
-                          <FaSave className="me-2" />Save Changes
+                        <button
+                          className="btn btn-success"
+                          onClick={handleSave}
+                        >
+                          <FaSave className="me-2" />
+                          Save Changes
                         </button>
-                        <button className="btn btn-secondary" onClick={handleCancel}>
-                          <FaTimes className="me-2" />Cancel
+                        <button
+                          className="btn btn-secondary"
+                          onClick={handleCancel}
+                        >
+                          <FaTimes className="me-2" />
+                          Cancel
                         </button>
                       </>
                     ) : (
-                      <button className="btn btn-outline-success" onClick={handleEdit}>
-                        <FaEdit className="me-2" />Edit Profile
+                      <button
+                        className="btn btn-outline-success"
+                        onClick={handleEdit}
+                      >
+                        <FaEdit className="me-2" />
+                        Edit Profile
                       </button>
                     )}
                   </div>
@@ -158,55 +200,70 @@ const TouristProfile = () => {
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-header bg-transparent">
               <h5 className="mb-0 text-success">
-                <FaUser className="me-2" />Personal Information
+                <FaUser className="me-2" />
+                Personal Information
               </h5>
             </div>
             <div className="card-body">
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold text-muted">
-                    <FaPhone className="me-2" />Phone Number
+                    <FaPhone className="me-2" />
+                    Phone Number
                   </label>
                   {isEditing ? (
                     <input
                       type="tel"
                       className="form-control"
                       value={editForm.phone}
-                      onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, phone: e.target.value })
+                      }
                     />
                   ) : (
-                    <p className="mb-0">{user.phone || 'Not provided'}</p>
+                    <p className="mb-0">{user.phone || "Not provided"}</p>
                   )}
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold text-muted">
-                    <FaGlobe className="me-2" />Nationality
+                    <FaGlobe className="me-2" />
+                    Nationality
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
                       className="form-control"
                       value={editForm.nationality}
-                      onChange={(e) => setEditForm({...editForm, nationality: e.target.value})}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          nationality: e.target.value,
+                        })
+                      }
                     />
                   ) : (
-                    <p className="mb-0">{user.nationality || 'Not specified'}</p>
+                    <p className="mb-0">
+                      {user.nationality || "Not specified"}
+                    </p>
                   )}
                 </div>
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold text-muted">
-                  <FaUser className="me-2" />Bio
+                  <FaUser className="me-2" />
+                  Bio
                 </label>
                 {isEditing ? (
                   <textarea
                     className="form-control"
                     rows="3"
                     value={editForm.bio}
-                    onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, bio: e.target.value })
+                    }
                   />
                 ) : (
-                  <p className="mb-0">{user.bio || 'No bio available'}</p>
+                  <p className="mb-0">{user.bio || "No bio available"}</p>
                 )}
               </div>
             </div>
@@ -216,13 +273,16 @@ const TouristProfile = () => {
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-header bg-transparent">
               <h5 className="mb-0 text-primary">
-                <FaMapMarkerAlt className="me-2" />Travel Preferences
+                <FaMapMarkerAlt className="me-2" />
+                Travel Preferences
               </h5>
             </div>
             <div className="card-body">
               <div className="row">
                 <div className="col-md-6 mb-3">
-                  <label className="form-label fw-semibold text-muted">Preferred Cities</label>
+                  <label className="form-label fw-semibold text-muted">
+                    Preferred Cities
+                  </label>
                   <div className="d-flex flex-wrap gap-2">
                     <span className="badge bg-success">Calamba</span>
                     <span className="badge bg-success">San Pablo</span>
@@ -230,7 +290,9 @@ const TouristProfile = () => {
                   </div>
                 </div>
                 <div className="col-md-6 mb-3">
-                  <label className="form-label fw-semibold text-muted">Interests</label>
+                  <label className="form-label fw-semibold text-muted">
+                    Interests
+                  </label>
                   <div className="d-flex flex-wrap gap-2">
                     <span className="badge bg-info">Historical Sites</span>
                     <span className="badge bg-info">Natural Parks</span>
@@ -244,7 +306,7 @@ const TouristProfile = () => {
 
         {/* Sidebar */}
         <div className="col-md-4">
-          {/* Quick Stats */}
+          {/* Quick Stats (real data from user/bookings/reviews when available) */}
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-header bg-transparent">
               <h6 className="mb-0 text-success">Travel Statistics</h6>
@@ -252,56 +314,38 @@ const TouristProfile = () => {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Total Tours</span>
-                <span className="fw-bold text-success">12</span>
+                <span className="fw-bold text-success">
+                  {user?.stats?.total_tours ?? 0}
+                </span>
               </div>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Cities Visited</span>
-                <span className="fw-bold text-primary">8</span>
+                <span className="fw-bold text-primary">
+                  {user?.stats?.cities_visited ?? 0}
+                </span>
               </div>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Reviews Given</span>
-                <span className="fw-bold text-warning">9</span>
+                <span className="fw-bold text-warning">
+                  {user?.stats?.reviews_given ?? 0}
+                </span>
               </div>
               <div className="d-flex justify-content-between align-items-center">
                 <span className="text-muted">Member Since</span>
-                <span className="fw-bold text-info">2024</span>
+                <span className="fw-bold text-info">
+                  {new Date(user?.created_at || Date.now()).getFullYear()}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Recent Activity (simple placeholders removed; show empty state) */}
           <div className="card border-0 shadow-sm">
             <div className="card-header bg-transparent">
               <h6 className="mb-0 text-success">Recent Activity</h6>
             </div>
             <div className="card-body">
-              <div className="d-flex align-items-center mb-3">
-                <div className="bg-success rounded-circle p-2 me-3">
-                  <FaMapMarkerAlt size={12} className="text-white" />
-                </div>
-                <div>
-                  <small className="text-muted">2 days ago</small>
-                  <p className="mb-0 small">Booked tour in Calamba</p>
-                </div>
-              </div>
-              <div className="d-flex align-items-center mb-3">
-                <div className="bg-primary rounded-circle p-2 me-3">
-                  <FaStar size={12} className="text-white" />
-                </div>
-                <div>
-                  <small className="text-muted">1 week ago</small>
-                  <p className="mb-0 small">Reviewed Rizal Shrine tour</p>
-                </div>
-              </div>
-              <div className="d-flex align-items-center">
-                <div className="bg-info rounded-circle p-2 me-3">
-                  <FaCalendarAlt size={12} className="text-white" />
-                </div>
-                <div>
-                  <small className="text-muted">2 weeks ago</small>
-                  <p className="mb-0 small">Visited San Pablo</p>
-                </div>
-              </div>
+              <p className="text-muted small mb-0">No recent activity yet.</p>
             </div>
           </div>
         </div>

@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Models\City;
 use App\Models\Category;
 use App\Models\PointOfInterest;
+use App\Models\LocationApplication;
+use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -232,6 +234,70 @@ class AdminController extends Controller
             'revenue_by_month' => $revenueByMonth,
             'top_guides' => $topGuides,
             'top_cities' => $topCities,
+        ]);
+    }
+
+    /**
+     * Get reports and analytics data
+     */
+    public function reports(Request $request)
+    {
+        $timeRange = $request->get('time_range', 'month');
+        
+        // Calculate date range based on time_range
+        $endDate = now();
+        $startDate = match($timeRange) {
+            'week' => $endDate->copy()->subWeek(),
+            'month' => $endDate->copy()->subMonth(),
+            'year' => $endDate->copy()->subYear(),
+            default => $endDate->copy()->subMonth(),
+        };
+
+        // Get basic statistics
+        $totalUsers = User::count();
+        $totalGuides = User::where('user_type', 'guide')->count();
+        $totalTourists = User::where('user_type', 'tourist')->count();
+        $activeGuides = TourGuide::where('is_available', true)->count();
+        
+        // Get revenue data
+        $totalRevenue = Payment::where('status', 'completed')->sum('amount');
+        $revenueInPeriod = Payment::where('status', 'completed')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->sum('amount');
+        
+        // Get booking data
+        $totalBookings = Booking::count();
+        $bookingsInPeriod = Booking::whereBetween('created_at', [$startDate, $endDate])->count();
+        $completedBookings = Booking::where('status', 'completed')->count();
+        $completionRate = $totalBookings > 0 ? ($completedBookings / $totalBookings) * 100 : 0;
+        
+        // Get average rating
+        $averageRating = Review::avg('rating') ?? 0;
+        
+        // Get average booking value
+        $avgBookingValue = $totalBookings > 0 ? ($totalRevenue / $totalBookings) : 0;
+
+        $stats = [
+            'totalRevenue' => $totalRevenue,
+            'revenueInPeriod' => $revenueInPeriod,
+            'totalBookings' => $totalBookings,
+            'bookingsInPeriod' => $bookingsInPeriod,
+            'activeGuides' => $activeGuides,
+            'totalUsers' => $totalUsers,
+            'totalGuides' => $totalGuides,
+            'totalTourists' => $totalTourists,
+            'averageRating' => round($averageRating, 1),
+            'completionRate' => round($completionRate, 1),
+            'avgBookingValue' => round($avgBookingValue, 2),
+        ];
+
+        return response()->json([
+            'stats' => $stats,
+            'timeRange' => $timeRange,
+            'period' => [
+                'start' => $startDate->toDateString(),
+                'end' => $endDate->toDateString(),
+            ]
         ]);
     }
 }

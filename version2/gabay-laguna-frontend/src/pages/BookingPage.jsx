@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
+import API_CONFIG from "../config/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../theme.css";
 
@@ -55,7 +56,9 @@ const BookingPage = () => {
   useEffect(() => {
     if (booking.start_time && booking.duration_hours) {
       const startTime = new Date(`2000-01-01T${booking.start_time}`);
-      const endTime = new Date(startTime.getTime() + booking.duration_hours * 60 * 60 * 1000);
+      const endTime = new Date(
+        startTime.getTime() + booking.duration_hours * 60 * 60 * 1000
+      );
       const endTimeStr = endTime.toTimeString().slice(0, 5);
       setBooking((prev) => ({ ...prev, end_time: endTimeStr }));
     }
@@ -68,7 +71,7 @@ const BookingPage = () => {
       // Load guide data
       if (guideId && !guide) {
         const guideResponse = await axios.get(
-          `http://127.0.0.1:8000/api/guides/${guideId}`
+          `${API_CONFIG.BASE_URL}/api/guides/${guideId}`
         );
         setGuide(guideResponse.data.tour_guide || guideResponse.data);
       }
@@ -76,7 +79,7 @@ const BookingPage = () => {
       // Load POI data
       if (poiId && !poi) {
         const poiResponse = await axios.get(
-          `http://127.0.0.1:8000/api/pois/${poiId}`
+          `${API_CONFIG.BASE_URL}/api/pois/${poiId}`
         );
         setPoi(poiResponse.data.point_of_interest || poiResponse.data);
       }
@@ -95,7 +98,9 @@ const BookingPage = () => {
   const loadAvailableTimeSlots = async () => {
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8000/api/guides/${guideId || booking.tour_guide_id}/availability`
+        `${API_CONFIG.BASE_URL}/api/guides/${
+          guideId || booking.tour_guide_id
+        }/availability`
       );
       setTimeSlots(response.data || []);
     } catch (error) {
@@ -161,7 +166,7 @@ const BookingPage = () => {
       };
 
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/bookings",
+        `${API_CONFIG.BASE_URL}/api/bookings`,
         bookingData,
         {
           headers: {
@@ -173,7 +178,9 @@ const BookingPage = () => {
       );
 
       if (response.data) {
-        alert("🎉 Booking created successfully! You will receive a confirmation email shortly.");
+        alert(
+          "🎉 Booking created successfully! You will receive a confirmation email shortly."
+        );
         navigate("/my-bookings");
       } else {
         alert("Booking failed. Please try again.");
@@ -305,9 +312,7 @@ const BookingPage = () => {
                     <button
                       type="button"
                       className="btn btn-outline-primary w-100"
-                      onClick={() =>
-                        navigate(`/poi/${poi?.id}/guides`)
-                      }
+                      onClick={() => navigate(`/poi/${poi?.id}/guides`)}
                     >
                       Browse Available Guides
                     </button>
@@ -459,7 +464,9 @@ const BookingPage = () => {
                     </label>
                     <input
                       type="date"
-                      className={`form-control ${errors.tour_date ? "is-invalid" : ""}`}
+                      className={`form-control ${
+                        errors.tour_date ? "is-invalid" : ""
+                      }`}
                       id="tour_date"
                       name="tour_date"
                       value={booking.tour_date}
@@ -475,9 +482,7 @@ const BookingPage = () => {
                       }}
                     />
                     {errors.tour_date && (
-                      <div className="invalid-feedback">
-                        {errors.tour_date}
-                      </div>
+                      <div className="invalid-feedback">{errors.tour_date}</div>
                     )}
                   </div>
                   <div className="col-md-6">
@@ -494,7 +499,9 @@ const BookingPage = () => {
                     </label>
                     <input
                       type="time"
-                      className={`form-control ${errors.start_time ? "is-invalid" : ""}`}
+                      className={`form-control ${
+                        errors.start_time ? "is-invalid" : ""
+                      }`}
                       id="start_time"
                       name="start_time"
                       value={booking.start_time}
@@ -566,7 +573,9 @@ const BookingPage = () => {
                     </label>
                     <input
                       type="number"
-                      className={`form-control ${errors.number_of_people ? "is-invalid" : ""}`}
+                      className={`form-control ${
+                        errors.number_of_people ? "is-invalid" : ""
+                      }`}
                       id="number_of_people"
                       name="number_of_people"
                       value={booking.number_of_people}

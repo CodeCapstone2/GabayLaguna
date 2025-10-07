@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import API_CONFIG from "../config/api";
 import {
   FaEye,
   FaEyeSlash,
   FaEnvelope,
   FaLock,
-  FaUserTag,
   FaSignInAlt,
 } from "react-icons/fa";
 
@@ -14,7 +14,6 @@ const Login = () => {
   const [form, setForm] = useState({
     email: "",
     password: "",
-    role: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -30,12 +29,6 @@ const Login = () => {
     }
     if (!form.password || form.password.length < 6) {
       errs.password = "Password must be at least 6 characters";
-    }
-    if (!form.role) {
-      errs.role = "Please select a role";
-    }
-    if (form.role === "admin") {
-      errs.role = "Admins must use the Admin Login page";
     }
     return errs;
   };
@@ -58,33 +51,51 @@ const Login = () => {
       setIsLoading(true);
       try {
         const response = await axios.post(
-          "http://127.0.0.1:8000/api/login",
-          form
+          `${API_CONFIG.BASE_URL}/api/login`,
+          {
+            email: form.email,
+            password: form.password,
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+          }
         );
         const { user, token } = response.data;
 
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("token", token);
 
-        alert(
-          `Login successful as ${
-            form.role
-              ? form.role.charAt(0).toUpperCase() + form.role.slice(1)
-              : "User"
-          }!`
-        );
+        const role = user?.user_type || user?.role || "user";
+        const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+        alert(`Login successful as ${roleLabel}!`);
 
-        if (form.role === "tourist") {
+        if (role === "tourist") {
           navigate("/tourist-dashboard");
-        } else if (form.role === "guide") {
+        } else if (role === "guide") {
           navigate("/guide-dashboard");
-        } else if (form.role === "admin") {
-          navigate("/admin/dashboard");
+        } else if (role === "admin") {
+          navigate("/admin-dashboard");
+        } else {
+          navigate("/");
         }
       } catch (error) {
-        setServerError(
-          error.response?.data?.message || "Login failed. Please try again."
-        );
+        // Improve diagnostics for Network Error
+        if (error.message === "Network Error") {
+          const base = API_CONFIG.BASE_URL;
+          setServerError(
+            `Network Error. Unable to reach API at ${base}.\n` +
+            `Please ensure the backend is running and CORS allows this origin.`
+          );
+        } else {
+          const errMsg = error.response?.data?.message || error.message || "Login failed.";
+          setServerError(errMsg);
+        }
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
       } finally {
         setIsLoading(false);
       }
@@ -103,24 +114,24 @@ const Login = () => {
         <div className="row justify-content-center">
           <div className="col-lg-5 col-md-7">
             {/* Logo and Header */}
-            <div className="text-center mb-4">
+            <div className="text-center mb-5">
               <img
                 src="/assets/logo.png"
                 alt="Gabay Laguna Logo"
-                className="mb-3"
+                className="mb-4"
                 style={{
-                  width: "80px",
+                  width: "90px",
                   height: "auto",
                   filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.2))",
                 }}
               />
-              <h2 className="text-white fw-bold mb-2">Welcome Back</h2>
-              <p className="text-white-50 mb-0">Sign in to your account</p>
+              <h1 className="text-white fw-bold mb-3">Welcome Back</h1>
+              <p className="text-white-50 lead mb-0">Sign in to your account</p>
             </div>
 
             {/* Login Form Card */}
-            <div className="card border-0 shadow-lg">
-              <div className="card-body p-4 p-md-5">
+            <div className="card">
+              <div className="card-body p-5">
                 {serverError && (
                   <div
                     className="alert alert-danger d-flex align-items-center"
@@ -196,44 +207,13 @@ const Login = () => {
                     </div>
                   </div>
 
-                  {/* Role Selection */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="role"
-                      className="form-label fw-semibold text-muted"
-                    >
-                      <FaUserTag className="me-2" />
-                      Select Role
-                    </label>
-                    <select
-                      className={`form-select form-select-lg ${
-                        errors.role ? "is-invalid" : ""
-                      }`}
-                      id="role"
-                      value={form.role}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Choose your role</option>
-                      <option value="tourist">🧳 Tourist</option>
-                      <option value="guide">🧭 Tour Guide</option>
-                    </select>
-                    {errors.role && (
-                      <div className="invalid-feedback">{errors.role}</div>
-                    )}
-                  </div>
+                  {/* No role selection: role is auto-detected on login */}
 
                   {/* Submit Button */}
                   <button
                     type="submit"
-                    className="btn btn-primary btn-lg w-100 mb-4 fw-semibold"
+                    className="btn btn-primary btn-lg w-100 mb-4"
                     disabled={isLoading}
-                    style={{
-                      background:
-                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                      border: "none",
-                      padding: "0.75rem 1.5rem",
-                    }}
                   >
                     {isLoading ? (
                       <>

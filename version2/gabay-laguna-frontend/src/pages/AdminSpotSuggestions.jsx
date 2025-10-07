@@ -8,7 +8,7 @@ const AdminSpotSuggestions = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const res = await fetch("http://127.0.0.1:8000/api/admin/spot-suggestions", {
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/admin/spot-suggestions`, {
         headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -25,7 +25,7 @@ const AdminSpotSuggestions = () => {
   const act = async (id, action) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://127.0.0.1:8000/api/admin/spot-suggestions/${id}/${action}`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/admin/spot-suggestions/${id}/${action}`, {
         method: "PUT",
         headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
       });

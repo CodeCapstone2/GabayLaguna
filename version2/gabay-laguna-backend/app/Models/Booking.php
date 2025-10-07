@@ -85,4 +85,20 @@ class Booking extends Model
     {
         return $query->where('status', 'confirmed');
     }
+
+    /**
+     * Get the guide's location for this booking
+     */
+    public function guideLocation()
+    {
+        return $this->hasOne(GuideLocation::class)->active()->latest('last_updated_at');
+    }
+
+    /**
+     * Get all guide locations for this booking
+     */
+    public function guideLocations()
+    {
+        return $this->hasMany(GuideLocation::class);
+    }
 }

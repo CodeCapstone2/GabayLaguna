@@ -10,7 +10,7 @@ const AdminLocationApplications = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      const url = `http://127.0.0.1:8000/api/admin/location-applications${filter !== 'all' ? `?status=${filter}` : ''}`;
+      const url = `${API_CONFIG.BASE_URL}/api/admin/location-applications${filter !== 'all' ? `?status=${filter}` : ''}`;
       const res = await fetch(url, {
         headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
       });
@@ -29,7 +29,7 @@ const AdminLocationApplications = () => {
     try {
       const token = localStorage.getItem("token");
       const notes = prompt(`Add notes for ${action} action (optional):`);
-      const res = await fetch(`http://127.0.0.1:8000/api/admin/location-applications/${id}/${action}`, {
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/admin/location-applications/${id}/${action}`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",

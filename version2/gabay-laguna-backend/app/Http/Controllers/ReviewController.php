@@ -65,6 +65,25 @@ class ReviewController extends Controller
             'comment' => $request->comment,
         ]);
 
+        // Notify guide about new review
+        try {
+            $guideUser = $review->tourGuide->user;
+            app(\App\Services\NotificationService::class)->sendRealTimeNotification(
+                $guideUser,
+                'new_review',
+                [
+                    'review_id' => $review->id,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::warning('Review created but notification failed', [
+                'review_id' => $review->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
         return response()->json([
             'message' => 'Review submitted successfully',
             'review' => $review->load(['tourist', 'tourGuide.user'])

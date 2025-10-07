@@ -1,6 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaEdit, FaSave, FaTimes, FaCamera, FaMapMarkerAlt, FaCalendarAlt, FaStar, FaCertificate, FaLanguage, FaCar, FaClock, FaDollarSign, FaCheckCircle, FaPlus, FaTrash } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import API_CONFIG from "../config/api";
+import {
+  FaUser,
+  FaEnvelope,
+  FaEdit,
+  FaSave,
+  FaTimes,
+  FaCamera,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaStar,
+  FaCertificate,
+  FaLanguage,
+  FaCar,
+  FaClock,
+  FaDollarSign,
+  FaCheckCircle,
+  FaPlus,
+  FaTrash,
+} from "react-icons/fa";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const TourGuideProfile = () => {
@@ -14,15 +33,16 @@ const TourGuideProfile = () => {
   const [availability, setAvailability] = useState([]);
   const [categories, setCategories] = useState([]);
   const [specializations, setSpecializations] = useState([]);
-  const [newSpecialization, setNewSpecialization] = useState('');
+  const [newSpecialization, setNewSpecialization] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    
+
     if (!userData || !token) {
       navigate("/login");
       return;
@@ -32,27 +52,27 @@ const TourGuideProfile = () => {
       const userObj = JSON.parse(userData);
       setUser(userObj);
       setTourGuide(userObj.tour_guide || {});
-      
+
       // Initialize edit form with both user and tour guide data
       setEditForm({
-        name: userObj.name || '',
-        email: userObj.email || '',
-        phone: userObj.phone || '',
-        bio: userObj.tour_guide?.bio || '',
-        license_number: userObj.tour_guide?.license_number || '',
+        name: userObj.name || "",
+        email: userObj.email || "",
+        phone: userObj.phone || "",
+        bio: userObj.tour_guide?.bio || "",
+        license_number: userObj.tour_guide?.license_number || "",
         experience_years: userObj.tour_guide?.experience_years || 0,
         hourly_rate: userObj.tour_guide?.hourly_rate || 0,
-        languages: userObj.tour_guide?.languages || '',
-        transportation_type: userObj.tour_guide?.transportation_type || ''
+        languages: userObj.tour_guide?.languages || "",
+        transportation_type: userObj.tour_guide?.transportation_type || "",
       });
-      
+
       // Load profile image if exists
       if (userObj.profile_picture) {
         setProfileImage(userObj.profile_picture);
       } else {
         setProfileImage("/assets/logo.png");
       }
-      
+
       // Fetch guide data
       fetchGuideData();
       fetchCategories();
@@ -65,47 +85,55 @@ const TourGuideProfile = () => {
   const getAuthHeaders = (includeJson = true) => {
     const token = localStorage.getItem("token");
     const headers = {
-      'Authorization': `Bearer ${token}`,
-      'Accept': 'application/json',
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
     };
-    
+
     if (includeJson) {
-      headers['Content-Type'] = 'application/json';
+      headers["Content-Type"] = "application/json";
     }
-    
+
     return headers;
   };
 
   const fetchGuideData = async () => {
     try {
       setLoading(true);
-      setError('');
-      
+      setError("");
+
       // Fetch availability
-      const availabilityRes = await fetch(`http://127.0.0.1:8000/api/guide/availability`, {
-        headers: getAuthHeaders()
-      });
-      
+      const availabilityRes = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/availability`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
       if (availabilityRes.ok) {
         const availabilityData = await availabilityRes.json();
-        setAvailability(Array.isArray(availabilityData) ? availabilityData : []);
+        setAvailability(
+          Array.isArray(availabilityData) ? availabilityData : []
+        );
       } else if (availabilityRes.status === 401) {
         handleUnauthorized();
         return;
       }
-      
+
       // Fetch specializations
-      const specRes = await fetch(`http://127.0.0.1:8000/api/guide/specializations`, {
-        headers: getAuthHeaders()
-      });
-      
+      const specRes = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/specializations`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+
       if (specRes.ok) {
         const specData = await specRes.json();
         setSpecializations(Array.isArray(specData) ? specData : []);
       }
     } catch (error) {
       console.error("Error fetching guide data:", error);
-      setError('Failed to load guide data. Please try again.');
+      setError("Failed to load guide data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -113,7 +141,7 @@ const TourGuideProfile = () => {
 
   const fetchCategories = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:8000/api/categories');
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/categories`);
       if (res.ok) {
         const data = await res.json();
         setCategories(Array.isArray(data) ? data : []);
@@ -124,9 +152,9 @@ const TourGuideProfile = () => {
   };
 
   const handleUnauthorized = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
   };
 
   const handleEdit = () => {
@@ -134,198 +162,209 @@ const TourGuideProfile = () => {
   };
 
   const handleSave = async () => {
-  try {
-    setSaving(true);
-    setError('');
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
-      navigate('/login');
-      return;
-    }
+    try {
+      setSaving(true);
+      setError("");
+      const token = localStorage.getItem("token");
 
-    // For AuthController's updateProfile, we only send user data
-    const formData = new FormData();
-
-    // Add user data to form
-    formData.append('name', editForm.name);
-    formData.append('email', editForm.email);
-    if (editForm.phone) {
-      formData.append('phone', editForm.phone);
-    }
-
-    // Add profile image if selected and it's a valid file
-    if (profileImageFile) {
-      if (profileImageFile.size <= 2 * 1024 * 1024) {
-        formData.append('profile_picture', profileImageFile);
-      } else {
-        setError('Profile picture must be less than 2MB');
-        setSaving(false);
+      if (!token) {
+        navigate("/login");
         return;
       }
-    }
 
-    console.log('Updating user profile...');
+      // For AuthController's updateProfile, we only send user data
+      const formData = new FormData();
 
-    // Update user profile using AuthController endpoint
-    const res = await fetch('http://127.0.0.1:8000/api/user/profile', {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    const responseText = await res.text();
-    console.log('User profile response:', responseText);
-
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-    } catch (e) {
-      console.error('Failed to parse JSON response:', e);
-      throw new Error('Server returned invalid JSON');
-    }
-
-    if (res.ok) {
-      const updatedUser = responseData.user;
-      console.log('User profile updated successfully:', updatedUser);
-      
-      // Now update tour guide specific data
-      console.log('Updating tour guide data...');
-      const guideUpdateSuccess = await updateTourGuideData(token);
-      
-      if (guideUpdateSuccess) {
-        console.log('Both user and tour guide data updated successfully');
-        
-        // Refresh the ENTIRE user data with tour_guide relationship
-        await refreshUserData(token);
-        
-        setIsEditing(false);
-        setProfileImageFile(null);
-        alert('Profile updated successfully!');
-      } else {
-        // User profile was updated but tour guide data failed
-        await refreshUserData(token); // Still refresh user data
-        setIsEditing(false);
-        setProfileImageFile(null);
-        alert('Profile updated, but some tour guide information may not have been saved.');
+      // Add user data to form
+      formData.append("name", editForm.name);
+      formData.append("email", editForm.email);
+      if (editForm.phone) {
+        formData.append("phone", editForm.phone);
       }
-    } else if (res.status === 401) {
-      handleUnauthorized();
-    } else if (res.status === 422) {
-      const errorMessages = Object.values(responseData.errors || {})
-        .flat()
-        .join(', ');
-      throw new Error(`Validation failed: ${errorMessages}`);
-    } else {
-      throw new Error(responseData.message || 'Failed to update profile');
-    }
-  } catch (error) {
-    console.error('Error updating profile:', error);
-    setError('Error updating profile: ' + error.message);
-  } finally {
-    setSaving(false);
-  }
-};
 
-// Add this function to refresh user data
-const refreshUserData = async (token) => {
-  try {
-    const userRes = await fetch('http://127.0.0.1:8000/api/user', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-      },
-    });
-    
-    if (userRes.ok) {
-      const userData = await userRes.json();
-      console.log('Refreshed user data:', userData.user);
-      setUser(userData.user);
-      setTourGuide(userData.user.tour_guide || {});
-      localStorage.setItem('user', JSON.stringify(userData.user));
-      
-      // Also update the editForm with the new data
-      setEditForm({
-        name: userData.user.name || '',
-        email: userData.user.email || '',
-        phone: userData.user.phone || '',
-        bio: userData.user.tour_guide?.bio || '',
-        license_number: userData.user.tour_guide?.license_number || '',
-        experience_years: userData.user.tour_guide?.experience_years || 0,
-        hourly_rate: userData.user.tour_guide?.hourly_rate || 0,
-        languages: userData.user.tour_guide?.languages || '',
-        transportation_type: userData.user.tour_guide?.transportation_type || ''
-      });
-    }
-  } catch (error) {
-    console.error('Error refreshing user data:', error);
-  }
-};
+      // Add profile image if selected and it's a valid file
+      if (profileImageFile) {
+        if (profileImageFile.size <= 2 * 1024 * 1024) {
+          formData.append("profile_picture", profileImageFile);
+        } else {
+          setError("Profile picture must be less than 2MB");
+          setSaving(false);
+          return;
+        }
+      }
 
-const updateTourGuideData = async (token) => {
-  try {
-    // Prepare tour guide data - ensure we don't send empty strings for nullable fields
-    const guideData = {};
-    
-    // Only include fields that have changed from the original values
-    if (editForm.bio !== tourGuide?.bio) guideData.bio = editForm.bio;
-    if (editForm.license_number !== tourGuide?.license_number) guideData.license_number = editForm.license_number;
-    if (editForm.experience_years !== tourGuide?.experience_years) guideData.experience_years = editForm.experience_years;
-    if (editForm.hourly_rate !== tourGuide?.hourly_rate) guideData.hourly_rate = editForm.hourly_rate;
-    if (editForm.languages !== tourGuide?.languages) guideData.languages = editForm.languages;
-    if (editForm.transportation_type !== tourGuide?.transportation_type) guideData.transportation_type = editForm.transportation_type;
+      console.log("Updating user profile...");
 
-    console.log('Sending tour guide data:', guideData);
-    console.log('Original tour guide data:', tourGuide);
-
-    // Only send if there's data to update
-    if (Object.keys(guideData).length > 0) {
-      const guideRes = await fetch('http://127.0.0.1:8000/api/guide/update-profile', {
-        method: 'PUT',
+      // Update user profile using AuthController endpoint
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/user/profile`, {
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(guideData),
+        body: formData,
       });
 
-      const guideResponseText = await guideRes.text();
-      console.log('Tour guide update response:', guideResponseText);
+      const responseText = await res.text();
+      console.log("User profile response:", responseText);
 
-      if (guideRes.ok) {
-        return true;
-      } else {
-        console.warn('Tour guide data update failed:', guideResponseText);
-        return false;
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse JSON response:", e);
+        throw new Error("Server returned invalid JSON");
       }
+
+      if (res.ok) {
+        const updatedUser = responseData.user;
+        console.log("User profile updated successfully:", updatedUser);
+
+        // Now update tour guide specific data
+        console.log("Updating tour guide data...");
+        const guideUpdateSuccess = await updateTourGuideData(token);
+
+        if (guideUpdateSuccess) {
+          console.log("Both user and tour guide data updated successfully");
+
+          // Refresh the ENTIRE user data with tour_guide relationship
+          await refreshUserData(token);
+
+          setIsEditing(false);
+          setProfileImageFile(null);
+          alert("Profile updated successfully!");
+        } else {
+          // User profile was updated but tour guide data failed
+          await refreshUserData(token); // Still refresh user data
+          setIsEditing(false);
+          setProfileImageFile(null);
+          alert(
+            "Profile updated, but some tour guide information may not have been saved."
+          );
+        }
+      } else if (res.status === 401) {
+        handleUnauthorized();
+      } else if (res.status === 422) {
+        const errorMessages = Object.values(responseData.errors || {})
+          .flat()
+          .join(", ");
+        throw new Error(`Validation failed: ${errorMessages}`);
+      } else {
+        throw new Error(responseData.message || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setError("Error updating profile: " + error.message);
+    } finally {
+      setSaving(false);
     }
-    console.log('No tour guide data changes detected');
-    return true; // No data to update is considered success
-  } catch (error) {
-    console.warn('Error updating tour guide data:', error);
-    return false;
-  }
-};
+  };
+
+  // Add this function to refresh user data
+  const refreshUserData = async (token) => {
+    try {
+      const userRes = await fetch(`${API_CONFIG.BASE_URL}/api/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        console.log("Refreshed user data:", userData.user);
+        setUser(userData.user);
+        setTourGuide(userData.user.tour_guide || {});
+        localStorage.setItem("user", JSON.stringify(userData.user));
+
+        // Also update the editForm with the new data
+        setEditForm({
+          name: userData.user.name || "",
+          email: userData.user.email || "",
+          phone: userData.user.phone || "",
+          bio: userData.user.tour_guide?.bio || "",
+          license_number: userData.user.tour_guide?.license_number || "",
+          experience_years: userData.user.tour_guide?.experience_years || 0,
+          hourly_rate: userData.user.tour_guide?.hourly_rate || 0,
+          languages: userData.user.tour_guide?.languages || "",
+          transportation_type:
+            userData.user.tour_guide?.transportation_type || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
+    }
+  };
+
+  const updateTourGuideData = async (token) => {
+    try {
+      // Prepare tour guide data - ensure we don't send empty strings for nullable fields
+      const guideData = {};
+
+      // Only include fields that have changed from the original values
+      if (editForm.bio !== tourGuide?.bio) guideData.bio = editForm.bio;
+      if (editForm.license_number !== tourGuide?.license_number)
+        guideData.license_number = editForm.license_number;
+      if (editForm.experience_years !== tourGuide?.experience_years)
+        guideData.experience_years = editForm.experience_years;
+      if (editForm.hourly_rate !== tourGuide?.hourly_rate)
+        guideData.hourly_rate = editForm.hourly_rate;
+      if (editForm.languages !== tourGuide?.languages)
+        guideData.languages = editForm.languages;
+      if (editForm.transportation_type !== tourGuide?.transportation_type)
+        guideData.transportation_type = editForm.transportation_type;
+
+      console.log("Sending tour guide data:", guideData);
+      console.log("Original tour guide data:", tourGuide);
+
+      // Only send if there's data to update
+      if (Object.keys(guideData).length > 0) {
+        const guideRes = await fetch(
+          `${API_CONFIG.BASE_URL}/api/guide/update-profile`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(guideData),
+          }
+        );
+
+        const guideResponseText = await guideRes.text();
+        console.log("Tour guide update response:", guideResponseText);
+
+        if (guideRes.ok) {
+          return true;
+        } else {
+          console.warn("Tour guide data update failed:", guideResponseText);
+          return false;
+        }
+      }
+      console.log("No tour guide data changes detected");
+      return true; // No data to update is considered success
+    } catch (error) {
+      console.warn("Error updating tour guide data:", error);
+      return false;
+    }
+  };
 
   const handleCancel = () => {
     setEditForm({
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      bio: tourGuide?.bio || '',
-      license_number: tourGuide?.license_number || '',
+      name: user?.name || "",
+      email: user?.email || "",
+      phone: user?.phone || "",
+      bio: tourGuide?.bio || "",
+      license_number: tourGuide?.license_number || "",
       experience_years: tourGuide?.experience_years || 0,
       hourly_rate: tourGuide?.hourly_rate || 0,
-      languages: tourGuide?.languages || '',
-      transportation_type: tourGuide?.transportation_type || ''
+      languages: tourGuide?.languages || "",
+      transportation_type: tourGuide?.transportation_type || "",
     });
     setProfileImage(user?.profile_picture || "/assets/logo.png");
     setProfileImageFile(null);
     setIsEditing(false);
-    setError('');
+    setError("");
   };
 
   const handleImageChange = (e) => {
@@ -342,135 +381,151 @@ const updateTourGuideData = async (token) => {
 
   const handleAvailabilityChange = async (day, timeSlot, isAvailable) => {
     try {
-      setError('');
+      setError("");
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
-        navigate('/login');
+        navigate("/login");
         return;
       }
 
       const timeMap = {
-        morning: { start: '08:00', end: '12:00' },
-        afternoon: { start: '13:00', end: '17:00' },
-        evening: { start: '18:00', end: '22:00' }
+        morning: { start: "08:00", end: "12:00" },
+        afternoon: { start: "13:00", end: "17:00" },
+        evening: { start: "18:00", end: "22:00" },
       };
 
-      const res = await fetch('http://127.0.0.1:8000/api/guide/availability', {
-        method: 'POST',
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/guide/availability`, {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           day_of_week: day,
           start_time: timeMap[timeSlot].start,
           end_time: timeMap[timeSlot].end,
-          is_available: isAvailable
-        })
+          is_available: isAvailable,
+        }),
       });
 
       if (res.ok) {
         const updatedAvailability = await res.json();
-        setAvailability(prev => {
-          const filtered = prev.filter(a => 
-            !(a.day_of_week === day && 
-              a.start_time === timeMap[timeSlot].start && 
-              a.end_time === timeMap[timeSlot].end)
+        setAvailability((prev) => {
+          const filtered = prev.filter(
+            (a) =>
+              !(
+                a.day_of_week === day &&
+                a.start_time === timeMap[timeSlot].start &&
+                a.end_time === timeMap[timeSlot].end
+              )
           );
-          return [...filtered, updatedAvailability.availability || updatedAvailability];
+          return [
+            ...filtered,
+            updatedAvailability.availability || updatedAvailability,
+          ];
         });
       } else if (res.status === 401) {
         handleUnauthorized();
       } else {
         const errorData = await res.json();
-        throw new Error(errorData.message || 'Failed to update availability');
+        throw new Error(errorData.message || "Failed to update availability");
       }
     } catch (error) {
-      console.error('Error updating availability:', error);
-      setError('Error updating availability: ' + error.message);
+      console.error("Error updating availability:", error);
+      setError("Error updating availability: " + error.message);
     }
   };
 
   const addSpecialization = async () => {
     if (!newSpecialization) return;
-    
+
     try {
-      setError('');
+      setError("");
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
-        navigate('/login');
+        navigate("/login");
         return;
       }
 
-      const res = await fetch('http://127.0.0.1:8000/api/guide/specializations', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          category_id: newSpecialization
-        })
-      });
+      const res = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/specializations`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            category_id: newSpecialization,
+          }),
+        }
+      );
 
       if (res.ok) {
         const newSpec = await res.json();
-        setSpecializations(prev => [...prev, newSpec.specialization || newSpec]);
-        setNewSpecialization('');
+        setSpecializations((prev) => [
+          ...prev,
+          newSpec.specialization || newSpec,
+        ]);
+        setNewSpecialization("");
       } else if (res.status === 401) {
         handleUnauthorized();
       }
     } catch (error) {
-      console.error('Error adding specialization:', error);
-      setError('Error adding specialization: ' + error.message);
+      console.error("Error adding specialization:", error);
+      setError("Error adding specialization: " + error.message);
     }
   };
 
   const removeSpecialization = async (specId) => {
     try {
-      setError('');
+      setError("");
       const token = localStorage.getItem("token");
-      
+
       if (!token) {
-        navigate('/login');
+        navigate("/login");
         return;
       }
 
-      const res = await fetch(`http://127.0.0.1:8000/api/guide/specializations/${specId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
+      const res = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/specializations/${specId}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        }
+      );
 
       if (res.ok) {
-        setSpecializations(prev => prev.filter(spec => spec.id !== specId));
+        setSpecializations((prev) => prev.filter((spec) => spec.id !== specId));
       } else if (res.status === 401) {
         handleUnauthorized();
       }
     } catch (error) {
-      console.error('Error removing specialization:', error);
-      setError('Error removing specialization: ' + error.message);
+      console.error("Error removing specialization:", error);
+      setError("Error removing specialization: " + error.message);
     }
   };
 
   const getAvailabilityForDay = (day) => {
     if (!Array.isArray(availability)) return [];
-    return availability.filter(a => a.day_of_week === day);
+    return availability.filter((a) => a.day_of_week === day);
   };
 
   const isTimeSlotAvailable = (day, timeSlot) => {
     const dayAvailability = getAvailabilityForDay(day);
     const timeMap = {
-      morning: { start: '08:00', end: '12:00' },
-      afternoon: { start: '13:00', end: '17:00' },
-      evening: { start: '18:00', end: '22:00' }
+      morning: { start: "08:00", end: "12:00" },
+      afternoon: { start: "13:00", end: "17:00" },
+      evening: { start: "18:00", end: "22:00" },
     };
-    
-    return dayAvailability.some(a => 
-      a.start_time === timeMap[timeSlot].start && 
-      a.end_time === timeMap[timeSlot].end && 
-      a.is_available
+
+    return dayAvailability.some(
+      (a) =>
+        a.start_time === timeMap[timeSlot].start &&
+        a.end_time === timeMap[timeSlot].end &&
+        a.is_available
     );
   };
 
@@ -485,18 +540,33 @@ const updateTourGuideData = async (token) => {
     );
   }
 
-  const daysOfWeek = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const timeSlots = ['morning', 'afternoon', 'evening'];
+  const daysOfWeek = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+  const timeSlots = ["morning", "afternoon", "evening"];
 
   return (
     <div className="container py-5">
       {error && (
-        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+        <div
+          className="alert alert-danger alert-dismissible fade show"
+          role="alert"
+        >
           {error}
-          <button type="button" className="btn-close" onClick={() => setError('')}></button>
+          <button
+            type="button"
+            className="btn-close"
+            onClick={() => setError("")}
+          ></button>
         </div>
       )}
-      
+
       <div className="row">
         {/* Profile Header */}
         <div className="col-12 mb-4">
@@ -508,22 +578,23 @@ const updateTourGuideData = async (token) => {
                     src={profileImage}
                     alt="Profile"
                     className="rounded-circle"
-                    style={{ width: '120px', height: '120px', objectFit: "cover" }}
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      objectFit: "cover",
+                    }}
                     onError={(e) => {
                       e.target.src = "/assets/logo.png";
                     }}
                   />
-                  {isEditing && (
-                    <label className="position-absolute bottom-0 end-0 bg-success text-white rounded-circle p-2" style={{ cursor: 'pointer' }}>
-                      <FaCamera size={16} />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                  )}
+                  {/* Always-mounted hidden file input for mobile click support */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    style={{ display: "none" }}
+                  />
                 </div>
                 <div className="flex-grow-1">
                   <h2 className="fw-bold text-primary mb-2">
@@ -532,7 +603,9 @@ const updateTourGuideData = async (token) => {
                         type="text"
                         className="form-control form-control-lg"
                         value={editForm.name}
-                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, name: e.target.value })
+                        }
                       />
                     ) : (
                       user.name
@@ -545,7 +618,9 @@ const updateTourGuideData = async (token) => {
                         type="email"
                         className="form-control"
                         value={editForm.email}
-                        onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, email: e.target.value })
+                        }
                       />
                     ) : (
                       user.email
@@ -554,16 +629,31 @@ const updateTourGuideData = async (token) => {
                   <div className="d-flex gap-2 mt-3">
                     {isEditing ? (
                       <>
-                        <button className="btn btn-success" onClick={handleSave} disabled={saving}>
-                          <FaSave className="me-2" />{saving ? 'Saving...' : 'Save Changes'}
+                        <button
+                          className="btn btn-success"
+                          onClick={handleSave}
+                          disabled={saving}
+                        >
+                          <FaSave className="me-2" />
+                          {saving ? "Saving..." : "Save Changes"}
                         </button>
-                        <button className="btn btn-secondary" onClick={handleCancel} disabled={saving}>
-                          <FaTimes className="me-2" />Cancel
+                        <button
+                          className="btn btn-secondary"
+                          onClick={handleCancel}
+                          disabled={saving}
+                        >
+                          <FaTimes className="me-2" />
+                          Cancel
                         </button>
                       </>
                     ) : (
-                      <button className="btn btn-outline-primary" onClick={handleEdit}>
-                        <FaEdit className="me-2" />Edit Profile
+                      <button
+                        type="button"
+                        className="btn btn-outline-primary"
+                        onClick={handleEdit}
+                      >
+                        <FaEdit className="me-2" />
+                        Edit Profile
                       </button>
                     )}
                   </div>
@@ -579,102 +669,143 @@ const updateTourGuideData = async (token) => {
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-header bg-transparent">
               <h5 className="mb-0 text-primary">
-                <FaCertificate className="me-2" />Professional Information
+                <FaCertificate className="me-2" />
+                Professional Information
               </h5>
             </div>
             <div className="card-body">
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold text-muted">
-                    <FaCertificate className="me-2" />License Number
+                    <FaCertificate className="me-2" />
+                    License Number
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
                       className="form-control"
                       value={editForm.license_number}
-                      onChange={(e) => setEditForm({...editForm, license_number: e.target.value})}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          license_number: e.target.value,
+                        })
+                      }
                     />
                   ) : (
-                    <p className="mb-0">{tourGuide?.license_number || 'Not provided'}</p>
+                    <p className="mb-0">
+                      {tourGuide?.license_number || "Not provided"}
+                    </p>
                   )}
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold text-muted">
-                    <FaStar className="me-2" />Experience (Years)
+                    <FaStar className="me-2" />
+                    Experience (Years)
                   </label>
                   {isEditing ? (
                     <input
                       type="number"
                       className="form-control"
                       value={editForm.experience_years}
-                      onChange={(e) => setEditForm({...editForm, experience_years: e.target.value})}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          experience_years: e.target.value,
+                        })
+                      }
                     />
                   ) : (
-                    <p className="mb-0">{tourGuide?.experience_years || 'Not specified'} years</p>
+                    <p className="mb-0">
+                      {tourGuide?.experience_years || "Not specified"} years
+                    </p>
                   )}
                 </div>
               </div>
               <div className="row">
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold text-muted">
-                    <FaDollarSign className="me-2" />Hourly Rate (₱)
+                    <FaDollarSign className="me-2" />
+                    Hourly Rate (₱)
                   </label>
                   {isEditing ? (
                     <input
                       type="number"
                       className="form-control"
                       value={editForm.hourly_rate}
-                      onChange={(e) => setEditForm({...editForm, hourly_rate: e.target.value})}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          hourly_rate: e.target.value,
+                        })
+                      }
                     />
                   ) : (
-                    <p className="mb-0">₱{tourGuide?.hourly_rate || 'Not specified'}</p>
+                    <p className="mb-0">
+                      ₱{tourGuide?.hourly_rate || "Not specified"}
+                    </p>
                   )}
                 </div>
                 <div className="col-md-6 mb-3">
                   <label className="form-label fw-semibold text-muted">
-                    <FaLanguage className="me-2" />Languages
+                    <FaLanguage className="me-2" />
+                    Languages
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
                       className="form-control"
                       value={editForm.languages}
-                      onChange={(e) => setEditForm({...editForm, languages: e.target.value})}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, languages: e.target.value })
+                      }
                     />
                   ) : (
-                    <p className="mb-0">{tourGuide?.languages || 'Not specified'}</p>
+                    <p className="mb-0">
+                      {tourGuide?.languages || "Not specified"}
+                    </p>
                   )}
                 </div>
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold text-muted">
-                  <FaCar className="me-2" />Transportation Type
+                  <FaCar className="me-2" />
+                  Transportation Type
                 </label>
                 {isEditing ? (
                   <input
                     type="text"
                     className="form-control"
                     value={editForm.transportation_type}
-                    onChange={(e) => setEditForm({...editForm, transportation_type: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        transportation_type: e.target.value,
+                      })
+                    }
                   />
                 ) : (
-                  <p className="mb-0">{tourGuide?.transportation_type || 'Not specified'}</p>
+                  <p className="mb-0">
+                    {tourGuide?.transportation_type || "Not specified"}
+                  </p>
                 )}
               </div>
               <div className="mb-3">
                 <label className="form-label fw-semibold text-muted">
-                  <FaUser className="me-2" />Bio
+                  <FaUser className="me-2" />
+                  Bio
                 </label>
                 {isEditing ? (
                   <textarea
                     className="form-control"
                     rows="3"
                     value={editForm.bio}
-                    onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, bio: e.target.value })
+                    }
                   />
                 ) : (
-                  <p className="mb-0">{tourGuide?.bio || 'No bio available'}</p>
+                  <p className="mb-0">{tourGuide?.bio || "No bio available"}</p>
                 )}
               </div>
             </div>
@@ -684,7 +815,8 @@ const updateTourGuideData = async (token) => {
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-header bg-transparent d-flex justify-content-between align-items-center">
               <h5 className="mb-0 text-success">
-                <FaMapMarkerAlt className="me-2" />Specializations
+                <FaMapMarkerAlt className="me-2" />
+                Specializations
               </h5>
               {isEditing && (
                 <div className="d-flex gap-2">
@@ -694,13 +826,16 @@ const updateTourGuideData = async (token) => {
                     onChange={(e) => setNewSpecialization(e.target.value)}
                   >
                     <option value="">Select Category</option>
-                    {categories.map(category => (
+                    {categories.map((category) => (
                       <option key={category.id} value={category.id}>
                         {category.name}
                       </option>
                     ))}
                   </select>
-                  <button className="btn btn-success btn-sm" onClick={addSpecialization}>
+                  <button
+                    className="btn btn-success btn-sm"
+                    onClick={addSpecialization}
+                  >
                     <FaPlus />
                   </button>
                 </div>
@@ -710,8 +845,11 @@ const updateTourGuideData = async (token) => {
               <div className="d-flex flex-wrap gap-2">
                 {specializations.length > 0 ? (
                   specializations.map((spec) => (
-                    <span key={spec.id} className="badge bg-success fs-6 d-flex align-items-center">
-                      {spec.category?.name || 'Unknown Category'}
+                    <span
+                      key={spec.id}
+                      className="badge bg-success fs-6 d-flex align-items-center"
+                    >
+                      {spec.category?.name || "Unknown Category"}
                       {isEditing && (
                         <button
                           className="btn btn-sm btn-link text-white p-0 ms-2"
@@ -733,14 +871,17 @@ const updateTourGuideData = async (token) => {
           <div className="card border-0 shadow-sm">
             <div className="card-header bg-transparent">
               <h5 className="mb-0 text-warning">
-                <FaClock className="me-2" />Availability Schedule
+                <FaClock className="me-2" />
+                Availability Schedule
               </h5>
             </div>
             <div className="card-body">
               {loading ? (
                 <div className="text-center py-3">
                   <div className="spinner-border text-warning" role="status">
-                    <span className="visually-hidden">Loading availability...</span>
+                    <span className="visually-hidden">
+                      Loading availability...
+                    </span>
                   </div>
                   <p className="mt-2 text-muted">Loading availability...</p>
                 </div>
@@ -756,17 +897,31 @@ const updateTourGuideData = async (token) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {daysOfWeek.map(day => (
+                      {daysOfWeek.map((day) => (
                         <tr key={day}>
                           <td className="fw-semibold text-capitalize">{day}</td>
-                          {timeSlots.map(timeSlot => (
+                          {timeSlots.map((timeSlot) => (
                             <td key={timeSlot}>
                               <button
-                                className={`btn btn-sm ${isTimeSlotAvailable(day, timeSlot) ? 'btn-success' : 'btn-outline-secondary'}`}
-                                onClick={() => handleAvailabilityChange(day, timeSlot, !isTimeSlotAvailable(day, timeSlot))}
+                                className={`btn btn-sm ${
+                                  isTimeSlotAvailable(day, timeSlot)
+                                    ? "btn-success"
+                                    : "btn-outline-secondary"
+                                }`}
+                                onClick={() =>
+                                  handleAvailabilityChange(
+                                    day,
+                                    timeSlot,
+                                    !isTimeSlotAvailable(day, timeSlot)
+                                  )
+                                }
                                 disabled={loading}
                               >
-                                {isTimeSlotAvailable(day, timeSlot) ? <FaCheckCircle /> : '—'}
+                                {isTimeSlotAvailable(day, timeSlot) ? (
+                                  <FaCheckCircle />
+                                ) : (
+                                  "—"
+                                )}
                               </button>
                             </td>
                           ))}
@@ -782,27 +937,37 @@ const updateTourGuideData = async (token) => {
 
         {/* Sidebar */}
         <div className="col-md-4">
-          {/* Quick Stats */}
+          {/* Quick Stats - computed from real reviews and profile data */}
           <div className="card border-0 shadow-sm mb-4">
             <div className="card-header bg-transparent">
               <h6 className="mb-0 text-primary">Guide Statistics</h6>
             </div>
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <span className="text-muted">Total Tours</span>
-                <span className="fw-bold text-success">156</span>
-              </div>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <span className="text-muted">Happy Clients</span>
-                <span className="fw-bold text-primary">142</span>
-              </div>
-              <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Average Rating</span>
-                <span className="fw-bold text-warning">4.8 ⭐</span>
+                <span className="fw-bold text-warning">
+                  {(user?.tour_guide?.reviews || []).length
+                    ? (
+                        (user.tour_guide.reviews.reduce(
+                          (sum, r) => sum + (Number(r.rating) || 0),
+                          0
+                        ) /
+                          user.tour_guide.reviews.length).toFixed(1)
+                      )
+                    : "0.0"} ⭐
+                </span>
+              </div>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <span className="text-muted">Total Reviews</span>
+                <span className="fw-bold text-primary">
+                  {(user?.tour_guide?.reviews || []).length}
+                </span>
               </div>
               <div className="d-flex justify-content-between align-items-center">
                 <span className="text-muted">Member Since</span>
-                <span className="fw-bold text-info">2020</span>
+                <span className="fw-bold text-info">
+                  {new Date(user?.created_at || Date.now()).getFullYear()}
+                </span>
               </div>
             </div>
           </div>
@@ -813,20 +978,25 @@ const updateTourGuideData = async (token) => {
               <h6 className="mb-0 text-primary">Quick Actions</h6>
             </div>
             <div className="card-body">
-              <button 
+              <button
+                type="button"
                 className="btn btn-outline-primary w-100 mb-2"
                 onClick={() => setIsEditing(true)}
               >
-                <FaEdit className="me-2" />Edit Profile
+                <FaEdit className="me-2" />
+                Edit Profile
               </button>
-              <button 
+              <button
+                type="button"
                 className="btn btn-outline-success w-100 mb-2"
-                onClick={() => document.querySelector('input[type="file"]')?.click()}
+                onClick={() => fileInputRef.current?.click()}
               >
-                <FaCamera className="me-2" />Change Photo
+                <FaCamera className="me-2" />
+                Change Photo
               </button>
-              <button className="btn btn-outline-info w-100">
-                <FaStar className="me-2" />View All Reviews
+              <button className="btn btn-outline-info w-100" onClick={() => navigate("/guide/reviews")}>
+                <FaStar className="me-2" />
+                View All Reviews
               </button>
             </div>
           </div>

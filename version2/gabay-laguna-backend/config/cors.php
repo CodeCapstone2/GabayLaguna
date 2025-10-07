@@ -20,6 +20,7 @@ return [
 
     'allowed_methods' => ['*'],
 
+    // Allow any origin (safe because supports_credentials is false)
     'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
@@ -28,9 +29,9 @@ return [
 
     'exposed_headers' => [],
 
-    'max_age' => 0,
+    'max_age' => 86400, // Cache preflight for 24 hours
 
+    // Set to false for ngrok cross-device access
     'supports_credentials' => false,
 
 ];
-

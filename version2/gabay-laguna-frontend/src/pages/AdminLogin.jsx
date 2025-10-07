@@ -1,12 +1,19 @@
-import axios from 'axios';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaShieldAlt, FaEye, FaEyeSlash, FaLock, FaUserShield } from 'react-icons/fa';
+import axios from "axios";
+import API_CONFIG from "../config/api";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  FaShieldAlt,
+  FaEye,
+  FaEyeSlash,
+  FaLock,
+  FaUserShield,
+} from "react-icons/fa";
 
 const AdminLogin = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -14,25 +21,25 @@ const AdminLogin = () => {
   const handleAdminLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
-    
+    setError("");
+
     try {
-      const response = await axios.post('http://127.0.0.1:8000/api/login', {
+      const response = await axios.post(`${API_CONFIG.BASE_URL}/api/login`, {
         email,
         password,
       });
 
       const { user, token } = response.data;
-      if (!user || (user.user_type !== 'admin' && user.role !== 'admin')) {
-        setError('This account is not an admin.');
+      if (!user || (user.user_type !== "admin" && user.role !== "admin")) {
+        setError("This account is not an admin.");
         return;
       }
 
-      localStorage.setItem('user', JSON.stringify(user));
-      if (token) localStorage.setItem('token', token);
-      navigate('/admin-dashboard');
+      localStorage.setItem("user", JSON.stringify(user));
+      if (token) localStorage.setItem("token", token);
+      navigate("/admin-dashboard");
     } catch (err) {
-      setError('Invalid admin credentials. Please try again.');
+      setError("Invalid admin credentials. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -42,7 +49,7 @@ const AdminLogin = () => {
     <div className="admin-login-container">
       {/* Background Pattern */}
       <div className="admin-login-bg-pattern"></div>
-      
+
       <div className="admin-login-wrapper">
         <div className="admin-login-card">
           {/* Header */}
@@ -89,7 +96,7 @@ const AdminLogin = () => {
               <div className="password-input-container">
                 <input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter admin password"
                   className="form-control admin-input"
                   value={password}
@@ -117,8 +124,8 @@ const AdminLogin = () => {
             )}
 
             {/* Submit Button */}
-            <button 
-              className={`admin-login-btn ${isLoading ? 'loading' : ''}`} 
+            <button
+              className={`admin-login-btn ${isLoading ? "loading" : ""}`}
               type="submit"
               disabled={isLoading}
             >

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import API_CONFIG from "../config/api";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../theme.css";
 
@@ -14,15 +15,29 @@ const AdminUserManagement = () => {
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
+    console.log("User data from localStorage:", userData);
+    
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const user = JSON.parse(userData);
+        console.log("Parsed user:", user);
+        console.log("User type:", user.user_type);
+        
+        if (user.user_type !== "admin") {
+          console.log("User is not admin, redirecting to login");
+          alert("Access denied. Admin privileges required.");
+          navigate("/login");
+          return;
+        }
+        setUser(user);
+        console.log("User is admin, proceeding to load users");
       } catch (error) {
         console.error("Error parsing user data:", error);
         navigate("/login");
         return;
       }
     } else {
+      console.log("No user data found, redirecting to login");
       navigate("/login");
       return;
     }
@@ -34,8 +49,13 @@ const AdminUserManagement = () => {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
+      
+      console.log("Loading users with token:", token ? "Present" : "Missing");
+      console.log("API URL:", `${API_CONFIG.BASE_URL}/api/admin/users`);
+      console.log("API_CONFIG:", API_CONFIG);
+      
       const response = await axios.get(
-        "http://127.0.0.1:8000/api/admin/users",
+        `${API_CONFIG.BASE_URL}/api/admin/users`,
         {
           headers: {
             Accept: "application/json",
@@ -43,13 +63,47 @@ const AdminUserManagement = () => {
           },
         }
       );
-      setUsers(response.data.users || []);
+      
+      console.log("API Response Status:", response.status);
+      console.log("API Response Headers:", response.headers);
+      console.log("API Response Data:", response.data);
+      
+      // Handle different API response formats
+      let usersData = [];
+      if (Array.isArray(response.data)) {
+        usersData = response.data;
+      } else if (response.data.users && Array.isArray(response.data.users)) {
+        usersData = response.data.users;
+      } else if (response.data.users && response.data.users.data && Array.isArray(response.data.users.data)) {
+        // Handle paginated response from Laravel
+        usersData = response.data.users.data;
+      } else if (response.data.data && Array.isArray(response.data.data)) {
+        usersData = response.data.data;
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        usersData = [];
+      }
+
+      console.log("Processed users data:", usersData);
+      setUsers(usersData);
     } catch (error) {
       console.error("Error loading users:", error);
-      // Show error message instead of fake data
-      alert(
-        "Failed to load users. Please check your connection and try again."
-      );
+      console.error("Error details:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      
+      // Show more specific error message
+      let errorMessage = "Failed to load users. ";
+      if (error.response?.status === 401) {
+        errorMessage += "Please log in again.";
+      } else if (error.response?.status === 403) {
+        errorMessage += "You don't have permission to access this page.";
+      } else if (error.response?.status === 500) {
+        errorMessage += "Server error. Please try again later.";
+      } else {
+        errorMessage += "Please check your connection and try again.";
+      }
+      
+      alert(errorMessage);
       setUsers([]);
     } finally {
       setLoading(false);
@@ -60,7 +114,7 @@ const AdminUserManagement = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://127.0.0.1:8000/api/admin/users/${userId}/verify`,
+        `${API_CONFIG.BASE_URL}/api/admin/users/${userId}/verify`,
         {},
         {
           headers: {
@@ -82,7 +136,7 @@ const AdminUserManagement = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://127.0.0.1:8000/api/admin/users/${userId}/status`,
+        `${API_CONFIG.BASE_URL}/api/admin/users/${userId}/status`,
         {
           is_active: !currentStatus,
         },
@@ -104,19 +158,21 @@ const AdminUserManagement = () => {
     }
   };
 
-  const filteredUsers = users.filter((user) => {
-    const matchesFilter =
-      filter === "all" ||
-      (filter === "tourists" && user.role === "tourist") ||
-      (filter === "guides" && user.role === "guide") ||
-      (filter === "pending" && !user.is_verified);
+  const filteredUsers = Array.isArray(users)
+    ? users.filter((user) => {
+        const matchesFilter =
+          filter === "all" ||
+          (filter === "tourists" && user.user_type === "tourist") ||
+          (filter === "guides" && user.user_type === "guide") ||
+          (filter === "pending" && !user.is_verified);
 
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch =
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesFilter && matchesSearch;
-  });
+        return matchesFilter && matchesSearch;
+      })
+    : [];
 
   if (loading) {
     return (
@@ -306,7 +362,9 @@ const AdminUserManagement = () => {
                   fontWeight: "700",
                 }}
               >
-                {users.filter((u) => u.role === "guide").length}
+                {Array.isArray(users)
+                  ? users.filter((u) => u.user_type === "guide").length
+                  : 0}
               </h4>
               <p
                 style={{
@@ -332,12 +390,47 @@ const AdminUserManagement = () => {
             <div className="card-body p-3">
               <h4
                 style={{
+                  color: "var(--color-info)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "700",
+                }}
+              >
+                {Array.isArray(users)
+                  ? users.filter((u) => u.user_type === "tourist").length
+                  : 0}
+              </h4>
+              <p
+                style={{
+                  color: "var(--color-text-secondary)",
+                  marginBottom: "0",
+                  fontSize: "0.9rem",
+                }}
+              >
+                Tourists
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div
+            className="card shadow-sm border-0 text-center"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            <div className="card-body p-3">
+              <h4
+                style={{
                   color: "var(--color-warning)",
                   fontFamily: "var(--font-family-heading)",
                   fontWeight: "700",
                 }}
               >
-                {users.filter((u) => !u.is_verified).length}
+                {Array.isArray(users)
+                  ? users.filter((u) => !u.is_verified).length
+                  : 0}
               </h4>
               <p
                 style={{
@@ -368,7 +461,9 @@ const AdminUserManagement = () => {
                   fontWeight: "700",
                 }}
               >
-                {users.filter((u) => !u.is_active).length}
+                {Array.isArray(users)
+                  ? users.filter((u) => !u.is_active).length
+                  : 0}
               </h4>
               <p
                 style={{

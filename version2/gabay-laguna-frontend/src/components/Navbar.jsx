@@ -65,11 +65,13 @@ const Navbar = () => {
     <nav
       className="navbar navbar-expand-lg navbar-dark px-4 py-3"
       style={{
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        boxShadow: "0 2px 20px rgba(0,0,0,0.1)",
+        background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+        boxShadow:
+          "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
         backdropFilter: "blur(10px)",
         position: "relative",
         zIndex: 1000,
+        borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
       }}
     >
       <div className="container">
@@ -117,6 +119,7 @@ const Navbar = () => {
         {/* Navigation Items */}
         <div className="collapse navbar-collapse" id="navbarNav">
           <div className="ms-auto d-flex gap-3 align-items-center">
+
             {/* Enhanced Theme Toggle */}
             <div className="d-none d-md-block">
               <ThemeToggle />
@@ -379,7 +382,7 @@ const Navbar = () => {
             )}
 
             {/* Mobile Theme Toggle */}
-            <div className="d-md-none">
+            <div className="d-md-none d-flex gap-2">
               <ThemeToggle />
             </div>
           </div>

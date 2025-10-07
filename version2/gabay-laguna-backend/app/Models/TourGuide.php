@@ -95,4 +95,20 @@ class TourGuide extends Model
     {
         return $query->where('is_available', true);
     }
+
+    /**
+     * Get the current location for this tour guide
+     */
+    public function currentLocation()
+    {
+        return $this->hasOne(GuideLocation::class)->active()->latest('last_updated_at');
+    }
+
+    /**
+     * Get all locations for this tour guide
+     */
+    public function locations()
+    {
+        return $this->hasMany(GuideLocation::class);
+    }
 }

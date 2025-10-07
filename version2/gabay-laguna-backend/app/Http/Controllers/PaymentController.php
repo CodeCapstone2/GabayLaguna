@@ -49,13 +49,13 @@ class PaymentController extends Controller
         ]);
 
         // Here you would integrate with PayPal API to verify and process the payment
-        // For now, we'll simulate a successful payment
+        // For now, we'll mark payment as completed but DO NOT auto-confirm the booking.
         $payment->update([
             'status' => 'completed',
             'paid_at' => now(),
         ]);
 
-        $booking->update(['status' => 'confirmed']);
+        // Leave booking as pending until guide confirms.
 
         return response()->json([
             'message' => 'Payment processed successfully',
@@ -103,13 +103,13 @@ class PaymentController extends Controller
         ]);
 
         // Here you would integrate with PayMongo API to verify and process the payment
-        // For now, we'll simulate a successful payment
+        // For now, we'll mark payment as completed but DO NOT auto-confirm the booking.
         $payment->update([
             'status' => 'completed',
             'paid_at' => now(),
         ]);
 
-        $booking->update(['status' => 'confirmed']);
+        // Leave booking as pending until guide confirms.
 
         return response()->json([
             'message' => 'Payment processed successfully',

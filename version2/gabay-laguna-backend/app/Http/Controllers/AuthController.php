@@ -40,6 +40,12 @@ class AuthController extends Controller
             'phone' => $request->phone,
         ]);
 
+        // Invalidate old tokens from other devices to prevent conflicts
+        try {
+            $user->tokens()->delete();
+        } catch (\Throwable $e) {
+            // ignore if tokens relation not available
+        }
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -92,6 +98,11 @@ class AuthController extends Controller
             'transportation_type' => $request->transportation_type,
         ]);
 
+        // Invalidate old tokens from other devices to prevent conflicts
+        try {
+            $user->tokens()->delete();
+        } catch (\Throwable $e) {
+        }
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

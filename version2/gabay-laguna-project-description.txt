@@ -1,0 +1,76 @@
+GABAY LAGUNA: A WEB-BASED TOUR GUIDE BOOKING SYSTEM
+
+PROJECT DESCRIPTION
+
+To address these challenges this study proposes "Gabay Laguna: A Web-Based Tour Guide Booking System," which aims to enhance the accessibility and reliability of tour guide services. The platform will serve as a digital marketplace where tourists can search, book, and interact with licensed tour guides based on location, expertise, and availability. The System will integrate real-time availability tracking, secure payment processing, and a review mechanism to foster transparency and trust between tourists and guides.
+
+OBJECTIVES OF THE STUDY
+
+The primary objective of this study is to design and develop a user-friendly, web-based tour guide booking platform that simplifies and optimizes the process of booking licensed tour guides by providing tourists with easy access to professional guides based on their preferences, location, and availability. The System will be designed to enhance efficiency, reliability, and convenience for tourists and tour guides while contributing to the growth and digital transformation of the tourism industry, especially within our local vicinity.
+
+Specifically, the study intends to do the following:
+
+1. Develop a web-based platform with the following features:
+
+1.1: Search and book tour guides based on criteria such as location, availability, language proficiency, expertise, and availability.
+
+1.2: Real-time user availability tracking system of tour guides that shows the current status of each tour guide within the platform
+
+1.3: Feedback and rating system for tour guides that show reviews and ratings from previous clients
+
+1.4: Integrated third-party online payment system that allows transactions between tourists and tour guides using local currency
+
+1.5: Location-based System matching System that connects tourists with local tour guides or local tourist attractions in nearby areas or specific destinations of interest.
+
+2. Evaluate the proposed website through direct feedback exclusively from its intended end-users, specifically tourists and tour guides, based on the following criteria of ISO/IEC 25010:2023:
+
+2.1: functional suitability;
+2.2: interaction capability;
+2.3: security; and
+2.4: reliability.
+
+3. Evaluate the proposed website through technical assessment exclusively by web development experts, specifically those with experience ranging at minimum 5 years, based on the following criteria of ISO/IEC 25010:2023:
+
+3.1: functional suitability;
+3.2: interaction capability;
+3.3: security; and
+3.4: maintainability.
+
+SCOPE AND LIMITATIONS
+
+The study will focus on developing and evaluating the Gabay Laguna Tour Guide Booking System within a selected tourist destination. The platform will be accessible via web browsers and will cater to tourists seeking guided experiences and certified tour guides looking for clients. The primary beneficiaries of this System will be the local tour guides and tourists, who will benefit from a more effective, streamlined, and user-friendly booking process.
+
+The main goal is to develop an operational tour guide reservation system serving the tour guides and tourists being the primary users. The location scope of the tour guides' operation using the System will primarily be around the region of Laguna. The platform will incorporate real-time tracking of availability, filtered search functions, payment processing online, tour guide review capabilities, and location-based matching.
+
+The proposed website will include several features such as:
+
+User Registration: A secure and efficient registration process by which tour guides and tourists can register. Tour guides will be verified to check if they are licensed professionals, whereas tourists can register through email or social media. Registration provides access to a custom dashboard for handling bookings, profiles, and availability settings.
+
+Profile Management: A profile management option through which tour guides can showcase their experience, availability, rates, and provided tour packages. They can edit descriptions, upload certificates, and include images to entice clients. Tourists can control their booking history, preferences, and reviews submitted. This feature ensures transparency and credibility, allowing users to make informed choices.
+
+Guide Search and Filter: A search tool that allows tourists to locate tour guides using various filters like location, language, specialization, price range, availability, and Tour Guide ratings. The faceted search function narrows the search results so that users can easily locate the most applicable tour guides without wasting time.
+
+Booking Requests: This is a reservation feature where tourists can make direct reservation requests, including the tour date, time, and needs they prefer. Tour guides can accept, reject, or suggest alternative timetables depending on their availability. When confirmed, a message will be triggered to both parties, promoting clear and seamless communication. The System will check whether a tour guide has already been available to avoid overbooking and scheduling conflicts. The System will send automated notifications in real time when a tour guide is on tour with another tourist.
+
+Payment Processing: A formal and safe online payment process accommodating payments in digital form, making payments seamless and convenient. Official receipts are generated after every Payment, which will act as proof of Payment. The tour guide and the Tourist will receive a confirmation message once the transaction goes through to ensure record keeping.
+
+Feedback Collection: A user-driven feedback and rating system where tourists can review tour guides based on their professionalism, knowledge, and overall experience. Reviews will include details, including the time when a customer checked in, how long the tour lasted, where any delays or drop-offs occurred, and the review section of each tour guide will be visible to every Tourist visiting the website and have a rolling average rating, number of bookings this week/month, and recent written Feedback in a dashboard widget. Guides can respond to Feedback to maintain credibility. Higher-rated guides will be prioritized in search rankings, promoting high service quality and accountability, whereas tour guides with low ratings will be shadow-banned, where their profile will not show up in the dashboard or search rankings unless deliberately searched by the user.
+
+Tourist and System Monitoring Capabilities: A tracking feature of tourist reviews/ratings for quality assessment, such as which tour guides and tourist attractions are most or least popular. Anonymized data on popular guides/tours may be used for service improvement and highlighting popular options, with careful consideration for privacy.
+
+While this study aims to provide a solution to the problem currently faced by tourists today, there are limitations that must be acknowledged:
+
+Focus on Web Development: The study will solely focus on developing a web application for the booking system. Users who primarily use mobile phones will have to visit the website on their browsers to use the booking system.
+
+Inclusion of Tour Guides: This study will only cover licensed tour guides, excluding unregistered freelance guides. This restriction ensures the data reflects regulated industry standards but may exclude insights from informal or emerging market segments.
+
+Real-time Tracking Implementation: Real-time tracking capabilities will be limited to displaying the availability status of guides rather than providing continuous GPS tracking. As a result, users seeking precise location data or detailed route information may encounter issues in this aspect of the platform.
+
+Payment Processing and Methods: The platform will only support certain online payment methods, which may restrict certain users' preferred methods of Payment. In addition to this, the System may not fully accommodate all international currencies, which can potentially limit accessibility for some clients that make use of such international currencies.
+
+---
+
+COLLEGE OF COMPUTING STUDIES
+Project Documentation
+Gabay Laguna Tour Guide Booking System
+

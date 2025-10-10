@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - Gabay Laguna</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 CORS Test for Gabay Laguna</h1>
+    <p>This page tests CORS configuration between frontend and backend.</p>
+    
+    <div id="results"></div>
+    
+    <button onclick="testCORS()">Test CORS</button>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="clearResults()">Clear Results</button>
+
+    <script>
+        const API_BASE_URL = window.__API_BASE_URL__ || 'http://localhost:8000';
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = message;
+            document.getElementById('results').appendChild(div);
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        async function testCORS() {
+            clearResults();
+            addResult(`🔍 Testing CORS connection to: ${API_BASE_URL}`, 'info');
+            
+            try {
+                // Test CORS endpoint
+                const response = await fetch(`${API_BASE_URL}/api/cors-test`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ CORS SUCCESS: ${data.message}`, 'success');
+                    addResult(`📄 Origin: ${data.origin}`, 'info');
+                    addResult(`⏰ Timestamp: ${data.timestamp}`, 'info');
+                } else {
+                    addResult(`❌ CORS FAILED: Status ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ CORS ERROR: ${error.message}`, 'error');
+                addResult(`🔧 This indicates CORS is not properly configured`, 'info');
+            }
+        }
+        
+        async function testLogin() {
+            addResult(`🔍 Testing login endpoint...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@gabaylaguna.com',
+                        password: 'password'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult(`✅ LOGIN SUCCESS: ${data.message}`, 'success');
+                    addResult(`👤 User: ${data.user.name} (${data.user.user_type})`, 'info');
+                    addResult(`🔑 Token: ${data.token.substring(0, 20)}...`, 'info');
+                } else {
+                    const errorData = await response.json();
+                    addResult(`⚠️ LOGIN FAILED: ${errorData.message}`, 'error');
+                    addResult(`📊 Status: ${response.status}`, 'info');
+                }
+            } catch (error) {
+                addResult(`❌ LOGIN ERROR: ${error.message}`, 'error');
+                addResult(`🔧 This indicates CORS or network issues`, 'info');
+            }
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            addResult(`🌐 Current API Base URL: ${API_BASE_URL}`, 'info');
+            addResult(`📍 Current page URL: ${window.location.href}`, 'info');
+            addResult(`🔧 Make sure backend is running on ${API_BASE_URL}`, 'info');
+            testCORS();
+        };
+    </script>
+</body>
+</html>

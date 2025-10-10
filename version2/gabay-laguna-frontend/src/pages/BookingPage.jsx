@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import API_CONFIG from "../config/api";
+import GuideAvailabilitySchedule from "../components/GuideAvailabilitySchedule";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../theme.css";
 
@@ -31,6 +32,7 @@ const BookingPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [user, setUser] = useState(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
 
   const loadAvailableTimeSlots = useCallback(async () => {
     try {
@@ -124,6 +126,10 @@ const BookingPage = () => {
       newErrors.start_time = "Start time is required";
     }
 
+    if (!selectedTimeSlot) {
+      newErrors.time_slot = "Please select an available time slot";
+    }
+
     if (!booking.tour_guide_id) {
       newErrors.tour_guide_id = "Please select a guide";
     }
@@ -204,6 +210,20 @@ const BookingPage = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
+    
+    // Clear selected time slot when date changes
+    if (name === 'tour_date') {
+      setSelectedTimeSlot(null);
+    }
+  };
+
+  const handleTimeSlotSelect = (timeSlot) => {
+    setSelectedTimeSlot(timeSlot);
+    setBooking((prev) => ({
+      ...prev,
+      start_time: timeSlot.startTime,
+      end_time: timeSlot.endTime
+    }));
   };
 
 
@@ -506,6 +526,32 @@ const BookingPage = () => {
                   </div>
                 </div>
 
+                {/* Guide Availability Schedule */}
+                {guide && booking.tour_date && (
+                  <div
+                    className="mb-4 p-4"
+                    style={{
+                      backgroundColor: "var(--color-bg-secondary)",
+                      borderRadius: "var(--radius-lg)",
+                      border: "1px solid var(--color-border-light)",
+                    }}
+                  >
+                    <GuideAvailabilitySchedule
+                      guideId={guide.id}
+                      selectedDate={booking.tour_date}
+                      onTimeSlotSelect={handleTimeSlotSelect}
+                      selectedTimeSlot={selectedTimeSlot}
+                      duration={booking.duration_hours}
+                    />
+                    {errors.time_slot && (
+                      <div className="text-danger small mt-2">
+                        <i className="fas fa-exclamation-triangle me-1"></i>
+                        {errors.time_slot}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Duration & Participants */}
                 <div className="row mb-3">
                   <div className="col-md-6">
@@ -778,6 +824,30 @@ const BookingPage = () => {
                   {booking.number_of_people}
                 </span>
               </div>
+              {selectedTimeSlot && (
+                <div className="d-flex justify-content-between mb-2">
+                  <span style={{ color: "var(--color-text-secondary)" }}>
+                    Time Slot:
+                  </span>
+                  <span style={{ fontWeight: "500" }}>
+                    {selectedTimeSlot.startTime} - {selectedTimeSlot.endTime}
+                  </span>
+                </div>
+              )}
+              {booking.tour_date && (
+                <div className="d-flex justify-content-between mb-2">
+                  <span style={{ color: "var(--color-text-secondary)" }}>
+                    Date:
+                  </span>
+                  <span style={{ fontWeight: "500" }}>
+                    {new Date(booking.tour_date).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </span>
+                </div>
+              )}
               <hr style={{ borderColor: "var(--color-border)" }} />
               <div className="d-flex justify-content-between mb-2">
                 <span style={{ color: "var(--color-text-secondary)" }}>

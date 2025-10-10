@@ -29,9 +29,7 @@ const POIGuides = () => {
     } catch (error) {
       console.error("Error fetching guides:", error);
       setError("Failed to load guides. Please try again later.");
-
-      // Fallback: Use demo data
-      setGuides(getDemoGuides());
+      setGuides([]);
     } finally {
       setLoading(false);
     }
@@ -54,33 +52,10 @@ const POIGuides = () => {
     }
   }, [poiId, fetchGuides, fetchPoiData, location.state?.poi]);
 
-  const getDemoGuides = () => {
-    // Demo data for fallback
-    return [
-      {
-        id: 1,
-        user: { name: "John Doe", email: "john@example.com" },
-        hourly_rate: 500,
-        experience_years: 3,
-        bio: "Experienced tour guide with knowledge of local history",
-        languages: "English, Tagalog",
-        rating: 4.5,
-      },
-      {
-        id: 2,
-        user: { name: "Maria Santos", email: "maria@example.com" },
-        hourly_rate: 600,
-        experience_years: 5,
-        bio: "Professional guide specializing in cultural tours",
-        languages: "English, Spanish, Tagalog",
-        rating: 4.8,
-      },
-    ];
-  };
 
-  const handleBookGuide = (guide) => {
-    // Use the new route format: /booking/:guideId/:poiId
-    navigate(`/booking/${guide.id}/${poiId}`, {
+  const handleViewGuide = (guide) => {
+    // Navigate to public guide profile first
+    navigate(`/guide/${guide.id}/profile`, {
       state: {
         poi: poi,
         guide: guide,
@@ -175,10 +150,10 @@ const POIGuides = () => {
 
                   <button
                     className="btn btn-primary w-100"
-                    onClick={() => handleBookGuide(guide)}
+                    onClick={() => handleViewGuide(guide)}
                   >
-                    <i className="fas fa-calendar-check me-2"></i>
-                    Book This Guide
+                    <i className="fas fa-user me-2"></i>
+                    View Profile
                   </button>
                 </div>
               </div>

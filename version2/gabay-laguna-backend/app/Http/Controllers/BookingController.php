@@ -246,7 +246,7 @@ class BookingController extends Controller
         $booking = Booking::where('tour_guide_id', $guide->id)->findOrFail($id);
 
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:confirmed,completed,cancelled',
+            'status' => 'required|in:confirmed,completed,cancelled,rejected',
         ]);
 
         if ($validator->fails()) {

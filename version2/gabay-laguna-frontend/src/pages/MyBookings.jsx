@@ -98,6 +98,7 @@ const MyBookings = () => {
       confirmed: { class: "bg-success", text: "Confirmed" },
       completed: { class: "bg-info", text: "Completed" },
       cancelled: { class: "bg-danger", text: "Cancelled" },
+      rejected: { class: "bg-danger", text: "Cancelled" }, // Show as "Cancelled" for user clarity
     };
 
     const config = statusConfig[status] || {
@@ -182,11 +183,11 @@ const MyBookings = () => {
       const isCompleted = bookingInfo.status === "completed" || start < now;
 
       if (activeTab === "upcoming") {
-        return !isCompleted && bookingInfo.status !== "cancelled";
+        return !isCompleted && bookingInfo.status !== "cancelled" && bookingInfo.status !== "rejected";
       } else if (activeTab === "past") {
         return isCompleted || bookingInfo.status === "completed";
       } else if (activeTab === "cancelled") {
-        return bookingInfo.status === "cancelled";
+        return bookingInfo.status === "cancelled" || bookingInfo.status === "rejected";
       }
 
       return true;
@@ -238,7 +239,7 @@ const MyBookings = () => {
                 now.setSeconds(0, 0);
                 const start = new Date(bookingInfo.date);
                 const isCompleted = bookingInfo.status === "completed" || start < now;
-                return !isCompleted && bookingInfo.status !== "cancelled";
+                return !isCompleted && bookingInfo.status !== "cancelled" && bookingInfo.status !== "rejected";
               }).length
             }
             )
@@ -272,7 +273,7 @@ const MyBookings = () => {
             {
               bookings.filter((booking) => {
                 const bookingInfo = getBookingInfo(booking);
-                return bookingInfo.status === "cancelled";
+                return bookingInfo.status === "cancelled" || bookingInfo.status === "rejected";
               }).length
             }
             )

@@ -25,6 +25,7 @@ const Sidebar = () => {
     guide: [
       { to: "/guide-dashboard", label: "Dashboard", icon: "🧭" },
       { to: "/guide-bookings", label: "Bookings", icon: "📋" },
+      { to: "/guide/reviews", label: "Reviews", icon: "⭐" },
       { to: "/guide/location-applications", label: "Locations", icon: "📍" },
       { to: "/guide-profile", label: "Profile", icon: "👤" },
     ],

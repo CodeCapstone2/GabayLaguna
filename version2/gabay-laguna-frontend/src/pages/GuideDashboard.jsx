@@ -13,6 +13,7 @@ const GuideDashboard = () => {
     monthlyEarnings: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -52,6 +53,7 @@ const GuideDashboard = () => {
           monthlyEarnings: 0,
         }
       );
+      setPeriod(response.data.period || null);
     } catch (error) {
       console.error("Error loading guide stats:", error);
       // Set default values when API is not available
@@ -175,11 +177,33 @@ const GuideDashboard = () => {
         </div>
       </div>
 
+      {/* Statistics Section */}
+      <div className="row mb-3">
+        <div className="col-12">
+          <h4 className="text-muted mb-0">
+            Dashboard Statistics
+            {period && (
+              <small className="ms-2 text-muted">
+                ({period.month})
+              </small>
+            )}
+          </h4>
+        </div>
+      </div>
+
       <div className="row">
         <div className="col-md-4">
           <div className="card shadow-sm border-0 text-center">
             <div className="card-body">
-              <h3 className="text-success">{stats.activeBookings}</h3>
+              {loading ? (
+                <div className="d-flex justify-content-center">
+                  <div className="spinner-border spinner-border-sm text-success" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : (
+                <h3 className="text-success">{stats.activeBookings}</h3>
+              )}
               <p className="text-muted mb-0">Active Bookings</p>
             </div>
           </div>
@@ -187,7 +211,15 @@ const GuideDashboard = () => {
         <div className="col-md-4">
           <div className="card shadow-sm border-0 text-center">
             <div className="card-body">
-              <h3 className="text-info">{stats.averageRating.toFixed(1)}</h3>
+              {loading ? (
+                <div className="d-flex justify-content-center">
+                  <div className="spinner-border spinner-border-sm text-info" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : (
+                <h3 className="text-info">{stats.averageRating.toFixed(1)}</h3>
+              )}
               <p className="text-muted mb-0">Average Rating</p>
             </div>
           </div>
@@ -195,9 +227,17 @@ const GuideDashboard = () => {
         <div className="col-md-4">
           <div className="card shadow-sm border-0 text-center">
             <div className="card-body">
-              <h3 className="text-warning">
-                PHP {stats.monthlyEarnings.toLocaleString()}
-              </h3>
+              {loading ? (
+                <div className="d-flex justify-content-center">
+                  <div className="spinner-border spinner-border-sm text-warning" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </div>
+                </div>
+              ) : (
+                <h3 className="text-warning">
+                  PHP {stats.monthlyEarnings.toLocaleString()}
+                </h3>
+              )}
               <p className="text-muted mb-0">This Month's Earnings</p>
             </div>
           </div>

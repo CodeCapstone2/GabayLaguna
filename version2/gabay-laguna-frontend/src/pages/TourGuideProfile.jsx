@@ -273,6 +273,8 @@ const TourGuideProfile = () => {
       if (userRes.ok) {
         const userData = await userRes.json();
         console.log("Refreshed user data:", userData.user);
+        console.log("Tour guide data:", userData.user.tour_guide);
+        console.log("Reviews data:", userData.user.tour_guide?.reviews);
         setUser(userData.user);
         setTourGuide(userData.user.tour_guide || {});
         localStorage.setItem("user", JSON.stringify(userData.user));
@@ -947,21 +949,27 @@ const TourGuideProfile = () => {
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Average Rating</span>
                 <span className="fw-bold text-warning">
-                  {(user?.tour_guide?.reviews || []).length
-                    ? (
-                        (user.tour_guide.reviews.reduce(
-                          (sum, r) => sum + (Number(r.rating) || 0),
-                          0
-                        ) /
-                          user.tour_guide.reviews.length).toFixed(1)
-                      )
-                    : "0.0"} ⭐
+                  {(() => {
+                    const reviews = user?.tour_guide?.reviews || [];
+                    console.log("Calculating average rating for reviews:", reviews);
+                    if (reviews.length > 0) {
+                      const total = reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
+                      const average = (total / reviews.length).toFixed(1);
+                      console.log("Total rating:", total, "Count:", reviews.length, "Average:", average);
+                      return average;
+                    }
+                    return "0.0";
+                  })()} ⭐
                 </span>
               </div>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Total Reviews</span>
                 <span className="fw-bold text-primary">
-                  {(user?.tour_guide?.reviews || []).length}
+                  {(() => {
+                    const reviews = user?.tour_guide?.reviews || [];
+                    console.log("Total reviews count:", reviews.length);
+                    return reviews.length;
+                  })()}
                 </span>
               </div>
               <div className="d-flex justify-content-between align-items-center">

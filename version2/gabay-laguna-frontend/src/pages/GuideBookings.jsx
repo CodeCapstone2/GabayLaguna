@@ -69,10 +69,18 @@ const GuideBookings = () => {
   };
 
   const updateBookingStatus = async (bookingId, status) => {
+    // Add confirmation for destructive actions
+    if (status === 'rejected' || status === 'cancelled') {
+      const action = status === 'rejected' ? 'reject' : 'cancel';
+      if (!window.confirm(`Are you sure you want to ${action} this booking? This action cannot be undone.`)) {
+        return;
+      }
+    }
+
     try {
       const token = localStorage.getItem("token");
 
-      await axios.put(
+      const response = await axios.put(
         `${API_CONFIG.BASE_URL}/api/guide/bookings/${bookingId}/status`,
         { status },
         {
@@ -84,11 +92,39 @@ const GuideBookings = () => {
         }
       );
 
-      alert(`Booking ${status} successfully!`);
+      // Show success message with proper status formatting
+      const statusText = status.charAt(0).toUpperCase() + status.slice(1);
+      alert(`Booking ${statusText} successfully!`);
       loadBookings();
     } catch (error) {
       console.error("Error updating booking status:", error);
-      alert("Failed to update booking status. Please try again.");
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to update booking status. Please try again.";
+      
+      if (error.response) {
+        // Server responded with error status
+        const statusCode = error.response.status;
+        const responseData = error.response.data;
+        
+        if (statusCode === 422) {
+          // Validation error
+          errorMessage = responseData.message || "Invalid booking status. Please try again.";
+        } else if (statusCode === 404) {
+          errorMessage = "Booking not found. It may have been deleted.";
+        } else if (statusCode === 403) {
+          errorMessage = "You don't have permission to update this booking.";
+        } else if (statusCode === 401) {
+          errorMessage = "Please log in again to continue.";
+        } else {
+          errorMessage = responseData.message || `Server error (${statusCode}). Please try again.`;
+        }
+      } else if (error.request) {
+        // Network error
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      }
+      
+      alert(errorMessage);
     }
   };
 

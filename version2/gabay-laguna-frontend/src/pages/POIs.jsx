@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import API_CONFIG from "../config/api";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { getImageUrl, handleImageError } from "../utils/imageUtils";
 
 const POIs = () => {
   const { cityId } = useParams();
@@ -521,15 +522,11 @@ const POIs = () => {
             <div key={poi.id} className="col-md-6 col-lg-4 mb-4">
               <div className="card h-100 shadow-sm">
                 <img
-                  src={
-                    poi.image || poi.images?.[0] || "/assets/default-poi.jpg"
-                  }
+                  src={getImageUrl(poi.name, 'poi', poi.image || poi.images?.[0])}
                   className="card-img-top"
                   alt={poi.name}
                   style={{ height: "200px", objectFit: "cover" }}
-                  onError={(e) => {
-                    e.target.src = "/assets/default-poi.jpg";
-                  }}
+                  onError={(e) => handleImageError(e, 'poi')}
                 />
                 <div className="card-body d-flex flex-column">
                   <h5 className="card-title">{poi.name}</h5>

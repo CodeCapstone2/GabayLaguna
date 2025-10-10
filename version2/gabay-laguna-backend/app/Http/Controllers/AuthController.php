@@ -158,7 +158,7 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
-        $user = $request->user()->load('tourGuide');
+        $user = $request->user()->load(['tourGuide.reviews.tourist']);
         return response()->json([
             'user' => $user
         ]);

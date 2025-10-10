@@ -8,8 +8,12 @@ use App\Models\PointOfInterest;
 use App\Models\LocationApplication;
 use App\Models\GuideAvailability;
 use App\Models\GuideSpecialization;
+use App\Models\Booking;
+use App\Models\Review;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 
 class TourGuideController extends Controller
@@ -183,6 +187,99 @@ class TourGuideController extends Controller
     }
 
     /**
+     * Get available time slots for a specific date
+     */
+    public function getAvailableTimeSlots(Request $request, $guideId)
+    {
+        $validator = Validator::make($request->all(), [
+            'date' => 'required|date|after_or_equal:today',
+            'duration' => 'nullable|integer|min:1|max:8',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $guide = TourGuide::findOrFail($guideId);
+        $date = $request->date;
+        $duration = $request->duration ?? 2; // Default 2 hours
+        $dayOfWeek = strtolower(date('l', strtotime($date)));
+
+        // Get guide's availability for this day of week
+        $dayAvailability = $guide->availabilities()
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_available', true)
+            ->orderBy('start_time')
+            ->get();
+
+        if ($dayAvailability->isEmpty()) {
+            return response()->json([
+                'date' => $date,
+                'day_of_week' => $dayOfWeek,
+                'available_slots' => [],
+                'message' => 'Guide is not available on this day'
+            ]);
+        }
+
+        // Get existing bookings for this date
+        $existingBookings = \App\Models\Booking::where('tour_guide_id', $guideId)
+            ->where('tour_date', $date)
+            ->where('status', '!=', 'cancelled')
+            ->get();
+
+        // Generate time slots
+        $availableSlots = [];
+        
+        foreach ($dayAvailability as $availability) {
+            $startHour = (int) date('H', strtotime($availability->start_time));
+            $endHour = (int) date('H', strtotime($availability->end_time));
+            
+            // Generate hourly slots within this availability window
+            for ($hour = $startHour; $hour < $endHour; $hour++) {
+                $slotStart = sprintf('%02d:00', $hour);
+                $slotEnd = sprintf('%02d:00', $hour + $duration);
+                
+                // Check if this slot would exceed the availability window
+                if ($hour + $duration > $endHour) {
+                    continue;
+                }
+                
+                // Check for booking conflicts
+                $hasConflict = $existingBookings->some(function ($booking) use ($slotStart, $slotEnd) {
+                    $bookingStart = date('H:i', strtotime($booking->start_time));
+                    $bookingEnd = date('H:i', strtotime($booking->end_time));
+                    
+                    // Check if there's any overlap
+                    return ($slotStart < $bookingEnd && $slotEnd > $bookingStart);
+                });
+                
+                $availableSlots[] = [
+                    'start_time' => $slotStart,
+                    'end_time' => $slotEnd,
+                    'available' => !$hasConflict,
+                    'booked' => $hasConflict,
+                    'duration' => $duration
+                ];
+            }
+        }
+
+        return response()->json([
+            'date' => $date,
+            'day_of_week' => $dayOfWeek,
+            'duration' => $duration,
+            'available_slots' => $availableSlots,
+            'guide' => [
+                'id' => $guide->id,
+                'name' => $guide->user->name,
+                'hourly_rate' => $guide->hourly_rate,
+            ]
+        ]);
+    }
+
+    /**
      * Set guide availability
      */
     public function setAvailability(Request $request)
@@ -312,6 +409,75 @@ class TourGuideController extends Controller
         $specializations = $guide->specializations()->with('category')->get();
 
         return response()->json($specializations);
+    }
+
+    /**
+     * Get guide dashboard statistics
+     */
+    public function dashboardStats(Request $request)
+    {
+        $guide = $request->user()->tourGuide;
+        
+        if (!$guide) {
+            return response()->json([
+                'message' => 'Tour guide profile not found'
+            ], 404);
+        }
+
+        try {
+            // Get current month's start and end dates
+            $currentMonthStart = now()->startOfMonth();
+            $currentMonthEnd = now()->endOfMonth();
+
+            // Active bookings (confirmed, in-progress, or pending)
+            $activeBookings = Booking::where('tour_guide_id', $guide->id)
+                ->whereIn('status', ['confirmed', 'in_progress', 'pending'])
+                ->count();
+
+            // Average rating from reviews
+            $averageRating = Review::whereHas('booking', function ($query) use ($guide) {
+                $query->where('tour_guide_id', $guide->id);
+            })->avg('rating') ?? 0;
+
+            // This month's earnings from completed payments
+            $monthlyEarnings = Payment::whereHas('booking', function ($query) use ($guide) {
+                $query->where('tour_guide_id', $guide->id);
+            })
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [$currentMonthStart, $currentMonthEnd])
+            ->sum('amount');
+
+            $stats = [
+                'activeBookings' => $activeBookings,
+                'averageRating' => round($averageRating, 1),
+                'monthlyEarnings' => $monthlyEarnings,
+            ];
+
+            return response()->json([
+                'stats' => $stats,
+                'period' => [
+                    'month' => now()->format('F Y'),
+                    'start' => $currentMonthStart->toDateString(),
+                    'end' => $currentMonthEnd->toDateString(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error fetching guide dashboard stats:', [
+                'guide_id' => $guide->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Error fetching dashboard statistics',
+                'stats' => [
+                    'activeBookings' => 0,
+                    'averageRating' => 0,
+                    'monthlyEarnings' => 0,
+                ]
+            ], 500);
+        }
     }
 
     /**

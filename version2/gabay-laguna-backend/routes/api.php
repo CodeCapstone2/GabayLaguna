@@ -50,6 +50,7 @@ Route::get('/guides/{guide}', [TourGuideController::class, 'show']);
 Route::get('/guides/search', [TourGuideController::class, 'search']);
 Route::get('/guides/{guide}/reviews', [ReviewController::class, 'getGuideReviews']);
 Route::get('/guides/{guide}/availability', [TourGuideController::class, 'getGuideAvailability']);
+Route::get('/guides/{guide}/time-slots', [TourGuideController::class, 'getAvailableTimeSlots']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -94,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/guide/reviews', [ReviewController::class, 'guideReviews']);
         Route::put('/guide/update-profile', [TourGuideController::class, 'updateGuideData']);
+        Route::get('/guide/dashboard-stats', [TourGuideController::class, 'dashboardStats']);
 
         Route::get('/guide/location-applications', [LocationApplicationController::class, 'guideApplications']);
         Route::post('/guide/location-applications', [LocationApplicationController::class, 'store']);

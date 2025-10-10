@@ -63,6 +63,7 @@ class ReviewController extends Controller
             'booking_id' => $request->booking_id,
             'rating' => $request->rating,
             'comment' => $request->comment,
+            'is_verified' => true, // Auto-verify reviews from authenticated users
         ]);
 
         // Notify guide about new review
@@ -186,7 +187,6 @@ class ReviewController extends Controller
     public function getGuideReviews(string $guideId)
     {
         $reviews = Review::where('tour_guide_id', $guideId)
-            ->verified()
             ->with(['tourist'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);

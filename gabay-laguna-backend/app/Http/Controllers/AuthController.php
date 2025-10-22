@@ -105,6 +105,9 @@ class AuthController extends Controller
         }
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Reload user with tour guide relationship
+        $user->load('tourGuide');
+
         return response()->json([
             'message' => 'Tour guide registered successfully',
             'user' => $user,
@@ -136,7 +139,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        $user = User::where('email', $request->email)->with('tourGuide')->firstOrFail();
         
         if (!$user->is_active) {
             return response()->json([

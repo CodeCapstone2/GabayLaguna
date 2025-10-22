@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import API_CONFIG from "../config/api";
+import StarRating from "./StarRating";
 
 const ReviewModal = ({ booking, guideId, onClose, onSubmitted }) => {
   const [rating, setRating] = useState(5);
@@ -54,17 +55,20 @@ const ReviewModal = ({ booking, guideId, onClose, onSubmitted }) => {
           <div className="modal-body">
             <div className="mb-3">
               <label className="form-label">Rating</label>
-              <select
-                className="form-select"
-                value={rating}
-                onChange={(e) => setRating(parseInt(e.target.value, 10))}
-              >
-                {[5, 4, 3, 2, 1].map((v) => (
-                  <option key={v} value={v}>
-                    {v} star{v > 1 ? "s" : ""}
-                  </option>
-                ))}
-              </select>
+              <div className="p-3 border rounded bg-light">
+                <StarRating 
+                  rating={rating} 
+                  showLabel={true}
+                  size="large"
+                  interactive={true}
+                  onRatingChange={setRating}
+                />
+                <div className="mt-2">
+                  <small className="text-muted">
+                    Click on the stars to select your rating
+                  </small>
+                </div>
+              </div>
             </div>
             <div className="mb-3">
               <label className="form-label">Feedback</label>

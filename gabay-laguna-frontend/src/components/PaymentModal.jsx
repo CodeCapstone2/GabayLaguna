@@ -6,6 +6,8 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
   const [method, setMethod] = useState("paypal");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [bankCode, setBankCode] = useState("BCA");
+  const [showBankSelection, setShowBankSelection] = useState(false);
 
   const pay = async () => {
     try {
@@ -28,12 +30,46 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
           }
         );
         onSuccess?.(resp.data);
-      } else {
+      } else if (method === "paymongo") {
         const resp = await axios.post(
           `${API_CONFIG.BASE_URL}/api/payments/paymongo`,
           {
             booking_id: booking.id,
             paymongo_payment_intent_id: `PM-${booking.id}-${Date.now()}`,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
+        onSuccess?.(resp.data);
+      } else if (method === "xendit_invoice") {
+        const resp = await axios.post(
+          `${API_CONFIG.BASE_URL}/api/payments/xendit/invoice`,
+          {
+            booking_id: booking.id,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/json",
+            },
+          }
+        );
+        
+        // Open Xendit invoice in new tab
+        if (resp.data.invoice_url) {
+          window.open(resp.data.invoice_url, '_blank');
+        }
+        onSuccess?.(resp.data);
+      } else if (method === "xendit_va") {
+        const resp = await axios.post(
+          `${API_CONFIG.BASE_URL}/api/payments/xendit/virtual-account`,
+          {
+            booking_id: booking.id,
+            bank_code: bankCode,
           },
           {
             headers: {
@@ -86,12 +122,35 @@ const PaymentModal = ({ booking, onClose, onSuccess }) => {
               <select
                 className="form-select"
                 value={method}
-                onChange={(e) => setMethod(e.target.value)}
+                onChange={(e) => {
+                  setMethod(e.target.value);
+                  setShowBankSelection(e.target.value === "xendit_va");
+                }}
               >
                 <option value="paypal">PayPal (simulate)</option>
                 <option value="paymongo">PayMongo (simulate)</option>
+                <option value="xendit_invoice">Xendit Invoice (GCash, PayMaya, etc.)</option>
+                <option value="xendit_va">Xendit Virtual Account (Bank Transfer)</option>
               </select>
             </div>
+            
+            {showBankSelection && (
+              <div className="mb-3">
+                <label className="form-label">Select Bank</label>
+                <select
+                  className="form-select"
+                  value={bankCode}
+                  onChange={(e) => setBankCode(e.target.value)}
+                >
+                  <option value="BCA">BCA</option>
+                  <option value="BNI">BNI</option>
+                  <option value="BRI">BRI</option>
+                  <option value="MANDIRI">Mandiri</option>
+                  <option value="PERMATA">Permata</option>
+                  <option value="BSI">BSI</option>
+                </select>
+              </div>
+            )}
             {error && (
               <div className="alert alert-warning" role="alert">
                 {error}

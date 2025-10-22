@@ -15,23 +15,24 @@ import {
   FaUserPlus,
   FaArrowLeft,
   FaSignInAlt,
-  FaFileUpload,
   FaExclamationTriangle,
 } from "react-icons/fa";
 
 const SignupGuide = () => {
   const [form, setForm] = useState({
-    fullName: "",
+    name: "",
     email: "",
-    contact: "",
-    address: "",
-    licenseNumber: "",
-    experience: "",
+    phone: "",
+    license_number: "",
+    experience_years: "",
     password: "",
-    confirmPassword: "",
+    password_confirmation: "",
+    bio: "",
+    hourly_rate: "",
+    languages: "",
+    transportation_type: "",
   });
 
-  const [certificate, setCertificate] = useState(null);
   const [errors, setErrors] = useState({});
   const [serverMessage, setServerMessage] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -41,36 +42,37 @@ const SignupGuide = () => {
 
   const validate = () => {
     const errs = {};
-    if (!form.fullName.trim()) errs.fullName = "Full name is required";
+    if (!form.name.trim()) errs.name = "Full name is required";
     if (!form.email.includes("@")) errs.email = "Valid email required";
-    if (!/^\d{10,15}$/.test(form.contact))
-      errs.contact = "Valid contact number required";
-    if (!form.address.trim()) errs.address = "Address is required";
-    if (!form.licenseNumber.trim())
-      errs.licenseNumber = "License number is required";
-    if (!form.experience || form.experience < 0)
-      errs.experience = "Valid experience required";
+    if (!/^\d{10,15}$/.test(form.phone))
+      errs.phone = "Valid contact number required";
+    if (!form.license_number.trim())
+      errs.license_number = "License number is required";
+    if (!form.experience_years || form.experience_years < 0)
+      errs.experience_years = "Valid experience required";
     if (form.password.length < 6)
       errs.password = "Minimum 6 characters required";
-    if (form.password !== form.confirmPassword)
-      errs.confirmPassword = "Passwords do not match";
+    if (form.password !== form.password_confirmation)
+      errs.password_confirmation = "Passwords do not match";
+    if (!form.bio.trim()) errs.bio = "Bio is required";
+    if (!form.hourly_rate || form.hourly_rate < 0)
+      errs.hourly_rate = "Valid hourly rate required";
+    if (!form.languages.trim()) errs.languages = "Languages are required";
 
-    if (!certificate) {
-      errs.certificate = "Certificate upload is required";
-    } else if (
-      !["application/pdf", "image/jpeg", "image/png"].includes(certificate.type)
-    ) {
-      errs.certificate = "Only PDF or image formats allowed";
-    } else if (certificate.size > 5 * 1024 * 1024) {
-      errs.certificate = "File must be smaller than 5MB";
-    }
 
     return errs;
   };
 
   const handleChange = (e) => {
-    const { id, value } = e.target;
-    setForm({ ...form, [id]: value });
+    const { id, value, type } = e.target;
+    let processedValue = value;
+    
+    // Convert numeric fields to numbers
+    if (type === 'number') {
+      processedValue = value === '' ? '' : Number(value);
+    }
+    
+    setForm({ ...form, [id]: processedValue });
     if (errors[id]) {
       setErrors({ ...errors, [id]: "" });
     }
@@ -85,18 +87,17 @@ const SignupGuide = () => {
     if (Object.keys(errs).length === 0) {
       setIsLoading(true);
       try {
-        const formData = new FormData();
-        Object.entries(form).forEach(([key, val]) => formData.append(key, val));
-        formData.append("certificate", certificate);
-
-        await axios.post(
+        // Clean the form data - remove empty strings and convert to proper types
+        const cleanedForm = {
+          ...form,
+          experience_years: form.experience_years ? Number(form.experience_years) : 0,
+          hourly_rate: form.hourly_rate ? Number(form.hourly_rate) : 0,
+        };
+        
+        console.log("Sending form data:", cleanedForm);
+        const response = await axios.post(
           `${API_CONFIG.BASE_URL}/api/guide/register`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
+          cleanedForm
         );
 
         alert(
@@ -104,9 +105,18 @@ const SignupGuide = () => {
         );
         navigate("/login");
       } catch (error) {
-        setServerMessage(
-          error.response?.data?.message || "Registration failed."
-        );
+        console.log("Error response:", error.response?.data);
+        console.log("Error status:", error.response?.status);
+        
+        if (error.response?.data?.errors) {
+          // Show specific validation errors
+          const errorMessages = Object.values(error.response.data.errors).flat();
+          setServerMessage(`Validation failed: ${errorMessages.join(', ')}`);
+        } else {
+          setServerMessage(
+            error.response?.data?.message || "Registration failed."
+          );
+        }
       } finally {
         setIsLoading(false);
       }
@@ -155,7 +165,7 @@ const SignupGuide = () => {
                   {/* Full Name Field */}
                   <div className="mb-4">
                     <label
-                      htmlFor="fullName"
+                      htmlFor="name"
                       className="form-label fw-semibold text-muted"
                     >
                       <FaUser className="me-2" />
@@ -164,16 +174,16 @@ const SignupGuide = () => {
                     <input
                       type="text"
                       className={`form-control form-control-lg ${
-                        errors.fullName ? "is-invalid" : ""
+                        errors.name ? "is-invalid" : ""
                       }`}
-                      id="fullName"
-                      value={form.fullName}
+                      id="name"
+                      value={form.name}
                       onChange={handleChange}
                       placeholder="Enter your full name"
                       required
                     />
-                    {errors.fullName && (
-                      <div className="invalid-feedback">{errors.fullName}</div>
+                    {errors.name && (
+                      <div className="invalid-feedback">{errors.name}</div>
                     )}
                   </div>
 
@@ -205,7 +215,7 @@ const SignupGuide = () => {
                   {/* Contact Field */}
                   <div className="mb-4">
                     <label
-                      htmlFor="contact"
+                      htmlFor="phone"
                       className="form-label fw-semibold text-muted"
                     >
                       <FaPhone className="me-2" />
@@ -214,48 +224,24 @@ const SignupGuide = () => {
                     <input
                       type="tel"
                       className={`form-control form-control-lg ${
-                        errors.contact ? "is-invalid" : ""
+                        errors.phone ? "is-invalid" : ""
                       }`}
-                      id="contact"
-                      value={form.contact}
+                      id="phone"
+                      value={form.phone}
                       onChange={handleChange}
                       placeholder="Enter your contact number"
                       required
                     />
-                    {errors.contact && (
-                      <div className="invalid-feedback">{errors.contact}</div>
+                    {errors.phone && (
+                      <div className="invalid-feedback">{errors.phone}</div>
                     )}
                   </div>
 
-                  {/* Address Field */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="address"
-                      className="form-label fw-semibold text-muted"
-                    >
-                      <FaMapMarkerAlt className="me-2" />
-                      Address
-                    </label>
-                    <textarea
-                      className={`form-control form-control-lg ${
-                        errors.address ? "is-invalid" : ""
-                      }`}
-                      id="address"
-                      value={form.address}
-                      onChange={handleChange}
-                      placeholder="Enter your complete address"
-                      rows="3"
-                      required
-                    />
-                    {errors.address && (
-                      <div className="invalid-feedback">{errors.address}</div>
-                    )}
-                  </div>
 
                   {/* License Number Field */}
                   <div className="mb-4">
                     <label
-                      htmlFor="licenseNumber"
+                      htmlFor="license_number"
                       className="form-label fw-semibold text-muted"
                     >
                       <FaIdCard className="me-2" />
@@ -264,17 +250,17 @@ const SignupGuide = () => {
                     <input
                       type="text"
                       className={`form-control form-control-lg ${
-                        errors.licenseNumber ? "is-invalid" : ""
+                        errors.license_number ? "is-invalid" : ""
                       }`}
-                      id="licenseNumber"
-                      value={form.licenseNumber}
+                      id="license_number"
+                      value={form.license_number}
                       onChange={handleChange}
                       placeholder="Enter your tour guide license number"
                       required
                     />
-                    {errors.licenseNumber && (
+                    {errors.license_number && (
                       <div className="invalid-feedback">
-                        {errors.licenseNumber}
+                        {errors.license_number}
                       </div>
                     )}
                   </div>
@@ -282,7 +268,7 @@ const SignupGuide = () => {
                   {/* Experience Field */}
                   <div className="mb-4">
                     <label
-                      htmlFor="experience"
+                      htmlFor="experience_years"
                       className="form-label fw-semibold text-muted"
                     >
                       <FaStar className="me-2" />
@@ -291,18 +277,128 @@ const SignupGuide = () => {
                     <input
                       type="number"
                       className={`form-control form-control-lg ${
-                        errors.experience ? "is-invalid" : ""
+                        errors.experience_years ? "is-invalid" : ""
                       }`}
-                      id="experience"
-                      value={form.experience}
+                      id="experience_years"
+                      value={form.experience_years}
                       onChange={handleChange}
                       placeholder="Enter years of experience"
                       min="0"
                       required
                     />
-                    {errors.experience && (
+                    {errors.experience_years && (
                       <div className="invalid-feedback">
-                        {errors.experience}
+                        {errors.experience_years}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bio Field */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="bio"
+                      className="form-label fw-semibold text-muted"
+                    >
+                      <FaUser className="me-2" />
+                      Bio
+                    </label>
+                    <textarea
+                      className={`form-control form-control-lg ${
+                        errors.bio ? "is-invalid" : ""
+                      }`}
+                      id="bio"
+                      value={form.bio}
+                      onChange={handleChange}
+                      placeholder="Tell us about yourself and your guiding experience"
+                      rows="3"
+                      required
+                    />
+                    {errors.bio && (
+                      <div className="invalid-feedback">{errors.bio}</div>
+                    )}
+                  </div>
+
+                  {/* Hourly Rate Field */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="hourly_rate"
+                      className="form-label fw-semibold text-muted"
+                    >
+                      <FaStar className="me-2" />
+                      Hourly Rate (PHP)
+                    </label>
+                    <input
+                      type="number"
+                      className={`form-control form-control-lg ${
+                        errors.hourly_rate ? "is-invalid" : ""
+                      }`}
+                      id="hourly_rate"
+                      value={form.hourly_rate}
+                      onChange={handleChange}
+                      placeholder="Enter your hourly rate in PHP"
+                      min="0"
+                      step="0.01"
+                      required
+                    />
+                    {errors.hourly_rate && (
+                      <div className="invalid-feedback">
+                        {errors.hourly_rate}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Languages Field */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="languages"
+                      className="form-label fw-semibold text-muted"
+                    >
+                      <FaUser className="me-2" />
+                      Languages
+                    </label>
+                    <input
+                      type="text"
+                      className={`form-control form-control-lg ${
+                        errors.languages ? "is-invalid" : ""
+                      }`}
+                      id="languages"
+                      value={form.languages}
+                      onChange={handleChange}
+                      placeholder="e.g., English, Tagalog, Spanish"
+                      required
+                    />
+                    {errors.languages && (
+                      <div className="invalid-feedback">{errors.languages}</div>
+                    )}
+                  </div>
+
+                  {/* Transportation Type Field */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="transportation_type"
+                      className="form-label fw-semibold text-muted"
+                    >
+                      <FaMapMarkerAlt className="me-2" />
+                      Transportation Type
+                    </label>
+                    <select
+                      className={`form-control form-control-lg ${
+                        errors.transportation_type ? "is-invalid" : ""
+                      }`}
+                      id="transportation_type"
+                      value={form.transportation_type}
+                      onChange={handleChange}
+                    >
+                      <option value="">Select transportation type</option>
+                      <option value="car">Car</option>
+                      <option value="motorcycle">Motorcycle</option>
+                      <option value="bicycle">Bicycle</option>
+                      <option value="walking">Walking</option>
+                      <option value="public_transport">Public Transport</option>
+                    </select>
+                    {errors.transportation_type && (
+                      <div className="invalid-feedback">
+                        {errors.transportation_type}
                       </div>
                     )}
                   </div>
@@ -347,7 +443,7 @@ const SignupGuide = () => {
                   {/* Confirm Password Field */}
                   <div className="mb-4">
                     <label
-                      htmlFor="confirmPassword"
+                      htmlFor="password_confirmation"
                       className="form-label fw-semibold text-muted"
                     >
                       <FaLock className="me-2" />
@@ -357,10 +453,10 @@ const SignupGuide = () => {
                       <input
                         type={showConfirmPassword ? "text" : "password"}
                         className={`form-control form-control-lg ${
-                          errors.confirmPassword ? "is-invalid" : ""
+                          errors.password_confirmation ? "is-invalid" : ""
                         }`}
-                        id="confirmPassword"
-                        value={form.confirmPassword}
+                        id="password_confirmation"
+                        value={form.password_confirmation}
                         onChange={handleChange}
                         placeholder="Confirm your password"
                         required
@@ -375,42 +471,14 @@ const SignupGuide = () => {
                       >
                         {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
                       </button>
-                      {errors.confirmPassword && (
+                      {errors.password_confirmation && (
                         <div className="invalid-feedback">
-                          {errors.confirmPassword}
+                          {errors.password_confirmation}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* Certificate Upload Field */}
-                  <div className="mb-4">
-                    <label
-                      htmlFor="certificate"
-                      className="form-label fw-semibold text-muted"
-                    >
-                      <FaFileUpload className="me-2" />
-                      Upload Certificate
-                    </label>
-                    <input
-                      type="file"
-                      className={`form-control form-control-lg ${
-                        errors.certificate ? "is-invalid" : ""
-                      }`}
-                      id="certificate"
-                      accept="application/pdf,image/jpeg,image/png"
-                      onChange={(e) => setCertificate(e.target.files[0])}
-                      required
-                    />
-                    {errors.certificate && (
-                      <div className="invalid-feedback">
-                        {errors.certificate}
-                      </div>
-                    )}
-                    <small className="text-muted">
-                      Accepted formats: PDF, JPEG, PNG (Max size: 5MB)
-                    </small>
-                  </div>
 
                   {/* Verification Notice */}
                   <div

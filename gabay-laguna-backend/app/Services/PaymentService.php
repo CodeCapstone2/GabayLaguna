@@ -12,6 +12,7 @@ class PaymentService
 {
     protected $paypalConfig;
     protected $paymongoConfig;
+    protected $xenditConfig;
 
     public function __construct()
     {
@@ -28,6 +29,14 @@ class PaymentService
             'secret_key' => config('services.paymongo.secret_key'),
             'public_key' => config('services.paymongo.public_key'),
             'base_url' => 'https://api.paymongo.com'
+        ];
+
+        $this->xenditConfig = [
+            'secret_key' => config('services.xendit.secret_key'),
+            'public_key' => config('services.xendit.public_key'),
+            'webhook_token' => config('services.xendit.webhook_token'),
+            'base_url' => config('services.xendit.base_url', 'https://api.xendit.co'),
+            'mode' => config('services.xendit.mode', 'sandbox')
         ];
     }
 
@@ -297,6 +306,240 @@ class PaymentService
     }
 
     /**
+     * Create Xendit invoice
+     */
+    public function createXenditInvoice(Booking $booking): array
+    {
+        try {
+            $payload = [
+                'external_id' => 'booking_' . $booking->id . '_' . time(),
+                'amount' => (int)$booking->total_amount,
+                'description' => "Tour Guide Booking - {$booking->tourGuide->user->name}",
+                'invoice_duration' => 86400, // 24 hours
+                'customer' => [
+                    'given_names' => $booking->tourist->first_name,
+                    'surname' => $booking->tourist->last_name,
+                    'email' => $booking->tourist->email,
+                    'mobile_number' => $booking->tourist->phone_number ?? null,
+                ],
+                'customer_notification_preference' => [
+                    'invoice_created' => ['email'],
+                    'invoice_reminder' => ['email'],
+                    'invoice_paid' => ['email'],
+                ],
+                'success_redirect_url' => config('app.frontend_url') . '/payment/success',
+                'failure_redirect_url' => config('app.frontend_url') . '/payment/failed',
+                'currency' => 'PHP',
+                'items' => [
+                    [
+                        'name' => "Tour Guide Service - {$booking->tourGuide->user->name}",
+                        'quantity' => 1,
+                        'price' => (int)$booking->total_amount,
+                        'category' => 'Tour Guide Service'
+                    ]
+                ],
+                'fees' => [
+                    [
+                        'type' => 'ADMIN',
+                        'value' => 0
+                    ]
+                ]
+            ];
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . base64_encode($this->xenditConfig['secret_key'] . ':'),
+                'Content-Type' => 'application/json'
+            ])->post("{$this->xenditConfig['base_url']}/v2/invoices", $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                // Create payment record
+                $payment = Payment::create([
+                    'booking_id' => $booking->id,
+                    'payment_method' => 'xendit',
+                    'transaction_id' => $data['id'],
+                    'amount' => $booking->total_amount,
+                    'status' => 'pending',
+                    'payment_details' => [
+                        'invoice_id' => $data['id'],
+                        'external_id' => $data['external_id'],
+                        'invoice_url' => $data['invoice_url'],
+                        'method' => 'xendit'
+                    ]
+                ]);
+
+                return [
+                    'success' => true,
+                    'payment_id' => $payment->id,
+                    'invoice_id' => $data['id'],
+                    'invoice_url' => $data['invoice_url'],
+                    'payment' => $payment
+                ];
+            }
+
+            Log::error('Xendit invoice creation failed', [
+                'booking_id' => $booking->id,
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to create Xendit invoice'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Xendit invoice creation error', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Payment service error'
+            ];
+        }
+    }
+
+    /**
+     * Create Xendit virtual account
+     */
+    public function createXenditVirtualAccount(Booking $booking, string $bankCode = 'BCA'): array
+    {
+        try {
+            $payload = [
+                'external_id' => 'booking_' . $booking->id . '_' . time(),
+                'bank_code' => $bankCode,
+                'name' => $booking->tourist->first_name . ' ' . $booking->tourist->last_name,
+                'expected_amount' => (int)$booking->total_amount,
+                'expiration_date' => now()->addDays(1)->toISOString(),
+                'is_closed' => true,
+                'is_single_use' => true,
+            ];
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . base64_encode($this->xenditConfig['secret_key'] . ':'),
+                'Content-Type' => 'application/json'
+            ])->post("{$this->xenditConfig['base_url']}/virtual_accounts", $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                
+                // Create payment record
+                $payment = Payment::create([
+                    'booking_id' => $booking->id,
+                    'payment_method' => 'xendit_va',
+                    'transaction_id' => $data['id'],
+                    'amount' => $booking->total_amount,
+                    'status' => 'pending',
+                    'payment_details' => [
+                        'virtual_account_id' => $data['id'],
+                        'external_id' => $data['external_id'],
+                        'account_number' => $data['account_number'],
+                        'bank_code' => $data['bank_code'],
+                        'method' => 'xendit_va'
+                    ]
+                ]);
+
+                return [
+                    'success' => true,
+                    'payment_id' => $payment->id,
+                    'virtual_account_id' => $data['id'],
+                    'account_number' => $data['account_number'],
+                    'bank_code' => $data['bank_code'],
+                    'payment' => $payment
+                ];
+            }
+
+            Log::error('Xendit virtual account creation failed', [
+                'booking_id' => $booking->id,
+                'response' => $response->json()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Failed to create Xendit virtual account'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Xendit virtual account creation error', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'Payment service error'
+            ];
+        }
+    }
+
+    /**
+     * Process Xendit webhook
+     */
+    public function processXenditWebhook(array $payload): bool
+    {
+        try {
+            $event = $payload['event'];
+            $data = $payload['data'];
+
+            if ($event === 'invoice.paid') {
+                $invoiceId = $data['id'];
+                $payment = Payment::where('transaction_id', $invoiceId)->first();
+
+                if ($payment) {
+                    $payment->update([
+                        'status' => 'completed',
+                        'paid_at' => now(),
+                        'payment_details' => array_merge($payment->payment_details, [
+                            'webhook_event' => $event,
+                            'payment_method' => $data['payment_method'] ?? null,
+                            'payment_channel' => $data['payment_channel'] ?? null,
+                            'paid_amount' => $data['paid_amount'] ?? null
+                        ])
+                    ]);
+
+                    // Update booking status
+                    $payment->booking->update(['status' => 'confirmed']);
+
+                    return true;
+                }
+            } elseif ($event === 'virtual_account.paid') {
+                $virtualAccountId = $data['id'];
+                $payment = Payment::where('transaction_id', $virtualAccountId)->first();
+
+                if ($payment) {
+                    $payment->update([
+                        'status' => 'completed',
+                        'paid_at' => now(),
+                        'payment_details' => array_merge($payment->payment_details, [
+                            'webhook_event' => $event,
+                            'payment_method' => 'bank_transfer',
+                            'payment_channel' => $data['payment_channel'] ?? null,
+                            'paid_amount' => $data['amount'] ?? null
+                        ])
+                    ]);
+
+                    // Update booking status
+                    $payment->booking->update(['status' => 'confirmed']);
+
+                    return true;
+                }
+            }
+
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('Xendit webhook processing error', [
+                'payload' => $payload,
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * Refund payment
      */
     public function refundPayment(Payment $payment, float $amount = null): array
@@ -315,6 +558,8 @@ class PaymentService
                 return $this->refundPayPalPayment($payment, $refundAmount);
             } elseif ($payment->payment_method === 'paymongo') {
                 return $this->refundPayMongoPayment($payment, $refundAmount);
+            } elseif (in_array($payment->payment_method, ['xendit', 'xendit_va'])) {
+                return $this->refundXenditPayment($payment, $refundAmount);
             }
 
             return [
@@ -450,6 +695,45 @@ class PaymentService
         return [
             'success' => false,
             'error' => 'PayMongo refund failed'
+        ];
+    }
+
+    /**
+     * Refund Xendit payment
+     */
+    protected function refundXenditPayment(Payment $payment, float $amount): array
+    {
+        $payload = [
+            'amount' => (int)$amount,
+            'reason' => 'requested_by_customer'
+        ];
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Basic ' . base64_encode($this->xenditConfig['secret_key'] . ':'),
+            'Content-Type' => 'application/json'
+        ])->post("{$this->xenditConfig['base_url']}/refunds", $payload);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            
+            $payment->update([
+                'status' => 'refunded',
+                'payment_details' => array_merge($payment->payment_details, [
+                    'refund_id' => $data['id'],
+                    'refund_status' => $data['status']
+                ])
+            ]);
+
+            return [
+                'success' => true,
+                'refund_id' => $data['id'],
+                'payment' => $payment
+            ];
+        }
+
+        return [
+            'success' => false,
+            'error' => 'Xendit refund failed'
         ];
     }
 }

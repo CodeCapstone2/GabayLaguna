@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API_CONFIG from "../config/api";
+import StarRating from "../components/StarRating";
 
 const TouristReviews = () => {
   const navigate = useNavigate();
@@ -128,18 +129,21 @@ const TouristReviews = () => {
                 <p className="mb-0 mt-2">{rev.comment}</p>
               ) : (
                 <div className="row g-2 mt-2">
-                  <div className="col-md-2">
-                    <select
-                      className="form-select"
-                      value={form.rating}
-                      onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
-                    >
-                      {[5, 4, 3, 2, 1].map((v) => (
-                        <option key={v} value={v}>
-                          {v} star{v > 1 ? "s" : ""}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="col-md-4">
+                    <div className="p-2 border rounded bg-light">
+                      <StarRating 
+                        rating={form.rating} 
+                        showLabel={true}
+                        size="normal"
+                        interactive={true}
+                        onRatingChange={(rating) => setForm({ ...form, rating })}
+                      />
+                      <div className="mt-1">
+                        <small className="text-muted">
+                          Click stars to change rating
+                        </small>
+                      </div>
+                    </div>
                   </div>
                   <div className="col-md-10">
                     <textarea

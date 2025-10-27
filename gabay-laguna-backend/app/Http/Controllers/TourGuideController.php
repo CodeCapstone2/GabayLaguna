@@ -227,7 +227,7 @@ class TourGuideController extends Controller
         // Get existing bookings for this date
         $existingBookings = \App\Models\Booking::where('tour_guide_id', $guideId)
             ->where('tour_date', $date)
-            ->where('status', '!=', 'cancelled')
+            ->whereNotIn('status', ['cancelled', 'rejected'])
             ->get();
 
         // Generate time slots

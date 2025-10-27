@@ -256,7 +256,20 @@ class BookingController extends Controller
             ], 422);
         }
 
+        $oldStatus = $booking->status;
         $booking->update(['status' => $request->status]);
+
+        // Send notification about status update
+        try {
+            app(\App\Services\NotificationService::class)->sendBookingStatusUpdate($booking, $oldStatus, $request->status);
+        } catch (\Exception $e) {
+            \Log::warning('Booking status updated but notification failed', [
+                'booking_id' => $booking->id,
+                'old_status' => $oldStatus,
+                'new_status' => $request->status,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'message' => 'Booking status updated successfully',

@@ -88,6 +88,7 @@ const SignupTourist = () => {
           name: form.fullName,
           email: form.email,
           phone: form.phone,
+          nationality: form.nationality,
           password: form.password,
           password_confirmation: form.confirmPassword,
           user_type: "tourist",

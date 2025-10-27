@@ -34,6 +34,21 @@ Route::get('/health', function () {
     ]);
 });
 
+// Public statistics
+Route::get('/statistics', function () {
+    $tourGuides = App\Models\User::where('user_type', 'guide')->count();
+    $destinations = App\Models\PointOfInterest::count();
+    $cities = App\Models\City::count();
+    $bookings = App\Models\Booking::where('status', 'completed')->count();
+    
+    return response()->json([
+        'tour_guides' => $tourGuides,
+        'destinations' => $destinations,
+        'cities' => $cities,
+        'completed_tours' => $bookings
+    ]);
+});
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/guide/register', [AuthController::class, 'registerGuide']);
@@ -73,6 +88,7 @@ Route::get('/debug/guides', function () {
 Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/user/statistics', [AuthController::class, 'getUserStatistics']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);

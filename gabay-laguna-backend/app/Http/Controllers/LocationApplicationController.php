@@ -63,10 +63,21 @@ class LocationApplicationController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'city_id' => 'required|exists:cities,id',
-            'poi_id' => 'nullable|exists:points_of_interest,id', // FIXED THIS LINE
+            'city_id' => 'nullable|exists:cities,id',
+            'poi_id' => 'nullable|exists:points_of_interest,id',
             'notes' => 'nullable|string|max:1000',
         ]);
+
+        // At least one of city_id or poi_id must be provided
+        if (empty($request->city_id) && empty($request->poi_id)) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => [
+                    'city_id' => ['Please select either a city or a specific point of interest.'],
+                    'poi_id' => ['Please select either a city or a specific point of interest.']
+                ]
+            ], 422);
+        }
 
         if ($validator->fails()) {
             return response()->json([
@@ -75,10 +86,17 @@ class LocationApplicationController extends Controller
             ], 422);
         }
 
-        // Check if there's already a pending application for this guide and city
+        // Check if there's already a pending application for this guide and location
         $existingApplication = LocationApplication::where('tour_guide_id', $guide->id)
-            ->where('city_id', $request->city_id)
             ->where('status', 'pending')
+            ->where(function($query) use ($request) {
+                if ($request->city_id) {
+                    $query->where('city_id', $request->city_id);
+                }
+                if ($request->poi_id) {
+                    $query->where('poi_id', $request->poi_id);
+                }
+            })
             ->first();
 
         if ($existingApplication) {

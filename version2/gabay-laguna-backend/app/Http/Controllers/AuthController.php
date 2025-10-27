@@ -23,6 +23,7 @@ class AuthController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', 'confirmed', Password::defaults()],
             'phone' => 'nullable|string|max:20',
+            'nationality' => 'nullable|string|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -38,6 +39,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'user_type' => 'tourist',
             'phone' => $request->phone,
+            'nationality' => $request->nationality,
         ]);
 
         // Invalidate old tokens from other devices to prevent conflicts
@@ -105,6 +107,9 @@ class AuthController extends Controller
         }
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        // Reload user with tour guide relationship
+        $user->load('tourGuide');
+
         return response()->json([
             'message' => 'Tour guide registered successfully',
             'user' => $user,
@@ -136,7 +141,7 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $user = User::where('email', $request->email)->firstOrFail();
+        $user = User::where('email', $request->email)->with('tourGuide')->firstOrFail();
         
         if (!$user->is_active) {
             return response()->json([
@@ -258,6 +263,124 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Password updated successfully'
+        ]);
+    }
+
+    /**
+     * Get user statistics for tourist profile
+     */
+    public function getUserStatistics(Request $request)
+    {
+        $user = $request->user();
+        
+        // Get booking statistics
+        $totalBookings = $user->touristBookings()->count();
+        $completedBookings = $user->touristBookings()->where('status', 'completed')->count();
+        $cancelledBookings = $user->touristBookings()->where('status', 'cancelled')->count();
+        
+        // Get unique cities visited
+        $citiesVisited = $user->touristBookings()
+            ->where('status', 'completed')
+            ->with('pointOfInterest.city')
+            ->get()
+            ->pluck('pointOfInterest.city.name')
+            ->unique()
+            ->count();
+        
+        // Get review statistics
+        $reviewsGiven = $user->touristReviews()->count();
+        
+        // Get recent bookings (last 5)
+        $recentBookings = $user->touristBookings()
+            ->with(['pointOfInterest.city', 'tourGuide.user'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($booking) {
+                return [
+                    'id' => $booking->id,
+                    'poi_name' => $booking->pointOfInterest->name ?? 'Unknown POI',
+                    'city' => $booking->pointOfInterest->city->name ?? 'Unknown City',
+                    'guide_name' => $booking->tourGuide->user->name ?? 'Unknown Guide',
+                    'status' => $booking->status,
+                    'tour_date' => $booking->tour_date,
+                    'created_at' => $booking->created_at,
+                ];
+            });
+        
+        // Generate travel preferences based on booking history
+        $preferredCities = $user->touristBookings()
+            ->where('status', 'completed')
+            ->with('pointOfInterest.city')
+            ->get()
+            ->pluck('pointOfInterest.city.name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+        
+        $preferredCategories = $user->touristBookings()
+            ->where('status', 'completed')
+            ->with('pointOfInterest.category')
+            ->get()
+            ->pluck('pointOfInterest.category.name')
+            ->filter()
+            ->unique()
+            ->values()
+            ->toArray();
+        
+        // Generate interests based on categories and POI types
+        $interests = [];
+        foreach ($preferredCategories as $category) {
+            switch (strtolower($category)) {
+                case 'waterfalls/adventure':
+                    $interests[] = 'Adventure Sports';
+                    $interests[] = 'Natural Parks';
+                    break;
+                case 'historical/cultural':
+                    $interests[] = 'Historical Sites';
+                    $interests[] = 'Cultural Heritage';
+                    break;
+                case 'educational':
+                    $interests[] = 'Educational Tours';
+                    $interests[] = 'Learning Experiences';
+                    break;
+                case 'lakes/nature':
+                    $interests[] = 'Natural Parks';
+                    $interests[] = 'Outdoor Activities';
+                    break;
+                case 'religious sites':
+                    $interests[] = 'Religious Sites';
+                    $interests[] = 'Spiritual Tourism';
+                    break;
+                case 'food & culinary':
+                    $interests[] = 'Local Food';
+                    $interests[] = 'Culinary Tours';
+                    break;
+                case 'art & museums':
+                    $interests[] = 'Art & Museums';
+                    $interests[] = 'Cultural Heritage';
+                    break;
+            }
+        }
+        
+        // Remove duplicates and limit to 5 interests
+        $interests = array_unique($interests);
+        $interests = array_slice($interests, 0, 5);
+        
+        return response()->json([
+            'statistics' => [
+                'total_tours' => $totalBookings,
+                'completed_tours' => $completedBookings,
+                'cancelled_tours' => $cancelledBookings,
+                'cities_visited' => $citiesVisited,
+                'reviews_given' => $reviewsGiven,
+            ],
+            'recent_activity' => $recentBookings,
+            'travel_preferences' => [
+                'preferred_cities' => $preferredCities,
+                'interests' => $interests
+            ]
         ]);
     }
 }

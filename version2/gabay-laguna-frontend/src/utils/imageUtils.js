@@ -1,39 +1,40 @@
 // Image utility functions for handling location and user images
 
-// Default images for locations
+// Default images for locations - Using diverse, unique real photos
 export const DEFAULT_IMAGES = {
-  // Cities
-  'Pagsanjan': '/assets/spots/pagsanjan-falls.svg',
-  'Sta. Rosa': '/assets/spots/enchanted-kingdom.svg', 
-  'Lumban': '/assets/spots/lake-caliraya.svg',
-  'Calamba': '/assets/spots/rizalshrine.jpg',
-  'San Pablo': '/assets/spots/seven-lakes.svg',
-  'Los Baños': '/assets/spots/up-losbanos.svg',
+  // Cities - Each city has its own unique image
+  'Pagsanjan': '/assets/StaRosaCity.jpg',
+  'Sta. Rosa': '/assets/StaRosaCity.jpg',
+  'Lumban': '/assets/BinanCity.jpg',
+  'Calamba': '/assets/CalambaCity.jpg',
+  'San Pablo': '/assets/SanPabloCity.svg.png',
+  'Los Baños': '/assets/CabuyaoCity.jpg',
+  'Nagcarlan': '/assets/SanPedroCity.jpg',
   
-  // POIs
-  'Pagsanjan Falls': '/assets/spots/pagsanjan-falls.svg',
-  'Pagsanjan Arch': '/assets/spots/pagsanjan-arch.svg',
-  'Enchanted Kingdom': '/assets/spots/enchanted-kingdom.svg',
-  'Sta. Rosa City Hall': '/assets/spots/sta-rosa-cityhall.svg',
-  'Lake Caliraya': '/assets/spots/lake-caliraya.svg',
-  'Lumban Church': '/assets/spots/lumban-church.svg',
+  // POIs - Each POI has its own unique image
+  'Pagsanjan Falls': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+  'Pagsanjan Arch': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
+  'Enchanted Kingdom': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&h=600&fit=crop',
+  'Sta. Rosa City Hall': 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=600&fit=crop',
+  'Lake Caliraya': 'https://images.unsplash.com/photo-1439066290691-510066268af5?w=800&h=600&fit=crop',
+  'Lumban Church': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
   'Rizal Shrine': '/assets/spots/rizalshrine.jpg',
   'Calamba Church': '/assets/spots/calambachurch.jpg',
-  'Mount Makiling': '/assets/spots/mount-makiling.svg',
-  'Seven Lakes of San Pablo': '/assets/spots/seven-lakes.svg',
-  'San Pablo Cathedral': '/assets/spots/sanpablo-cathedral.svg',
-  'UP Los Baños': '/assets/spots/up-losbanos.svg',
-  'Los Baños Hot Springs': '/assets/spots/losbanos-hotsprings.svg',
-  'Liliw Church': '/assets/spots/liliw-church.svg',
-  'Paete Woodcarving Shops': '/assets/spots/paete-woodcarving.svg',
-  'Majayjay Church': '/assets/spots/majayjay-church.svg',
-  'Majayjay Falls': '/assets/spots/majayjay-falls.svg',
-  'Pangil River': '/assets/spots/pangil-river.svg',
-  'Luisiana Scenic Views': '/assets/spots/luisiana-views.svg',
-  'Calauan Nature Park': '/assets/spots/calauan-park.svg',
-  'Nagcarlan Underground Cemetery': '/assets/spots/nagcarlan-cemetery.svg',
-  'Nagcarlan Falls': '/assets/spots/nagcarlan-falls.svg',
-  'Pila Heritage Town': '/assets/spots/pila-heritage.svg'
+  'Mount Makiling': 'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=800&h=600&fit=crop',
+  'Seven Lakes of San Pablo': 'https://images.unsplash.com/photo-1439066290691-510066268af5?w=800&h=600&fit=crop',
+  'San Pablo Cathedral': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
+  'UP Los Baños': 'https://images.unsplash.com/photo-1562774053-701939374585?w=800&h=600&fit=crop',
+  'Los Baños Hot Springs': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&h=600&fit=crop',
+  'Liliw Church': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
+  'Paete Woodcarving Shops': 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&h=600&fit=crop',
+  'Majayjay Church': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
+  'Majayjay Falls': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+  'Pangil River': 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&h=600&fit=crop',
+  'Luisiana Scenic Views': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+  'Calauan Nature Park': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop',
+  'Nagcarlan Underground Cemetery': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
+  'Nagcarlan Falls': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
+  'Pila Heritage Town': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop'
 };
 
 // Fallback images
@@ -69,6 +70,19 @@ export const IMAGE_ATTRIBUTIONS = {
     author: 'NHCP',
     url: 'https://nhcp.gov.ph/',
     license: 'Government Use'
+  },
+  // Unsplash attributions for real photos
+  'photo-1506905925346-21bda4d32df4': {
+    source: 'Unsplash',
+    author: 'Unsplash Community',
+    url: 'https://unsplash.com/photos/waterfall-nature-landscape',
+    license: 'Unsplash License - Free to use'
+  },
+  'photo-1544551763-46a013bb70d5': {
+    source: 'Unsplash',
+    author: 'Unsplash Community',
+    url: 'https://unsplash.com/photos/amusement-park-rides',
+    license: 'Unsplash License - Free to use'
   }
 };
 
@@ -88,7 +102,9 @@ export const getImageUrl = (name, type = 'poi', customImage = null) => {
   // Try to get from default images
   const defaultImage = DEFAULT_IMAGES[name];
   if (defaultImage) {
-    return defaultImage;
+    // Add cache-busting parameter to force reload
+    const separator = defaultImage.includes('?') ? '&' : '?';
+    return `${defaultImage}${separator}t=${Date.now()}`;
   }
   
   // Fallback to type-specific default

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import API_CONFIG from "../config/api";
+import StarRating from "../components/StarRating";
 import {
   FaUser,
   FaEnvelope,
@@ -98,6 +99,9 @@ const TourGuideProfile = () => {
 
     try {
       const userObj = JSON.parse(userData);
+      console.log("Loaded user data:", userObj);
+      console.log("Tour guide data:", userObj.tour_guide);
+      
       setUser(userObj);
       setTourGuide(userObj.tour_guide || {});
 
@@ -121,6 +125,9 @@ const TourGuideProfile = () => {
         setProfileImage("/assets/logo.png");
       }
 
+      // Refresh user data to get tour guide relationship
+      refreshUserData(token);
+      
       // Fetch guide data
       fetchGuideData();
       fetchCategories();
@@ -144,13 +151,51 @@ const TourGuideProfile = () => {
     return headers;
   };
 
+  // Add this function to refresh user data
+  const refreshUserData = async (token) => {
+    try {
+      const userRes = await fetch(`${API_CONFIG.BASE_URL}/api/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (userRes.ok) {
+        const userData = await userRes.json();
+        console.log("Refreshed user data:", userData.user);
+        console.log("Tour guide data:", userData.user.tour_guide);
+        setUser(userData.user);
+        setTourGuide(userData.user.tour_guide || {});
+        localStorage.setItem("user", JSON.stringify(userData.user));
+
+        // Also update the editForm with the new data
+        setEditForm({
+          name: userData.user.name || "",
+          email: userData.user.email || "",
+          phone: userData.user.phone || "",
+          bio: userData.user.tour_guide?.bio || "",
+          license_number: userData.user.tour_guide?.license_number || "",
+          experience_years: userData.user.tour_guide?.experience_years || 0,
+          hourly_rate: userData.user.tour_guide?.hourly_rate || 0,
+          languages: userData.user.tour_guide?.languages || "",
+          transportation_type:
+            userData.user.tour_guide?.transportation_type || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
+    }
+  };
+
 
   const fetchCategories = async () => {
     try {
       const res = await fetch(`${API_CONFIG.BASE_URL}/api/categories`);
       if (res.ok) {
         const data = await res.json();
-        setCategories(Array.isArray(data) ? data : []);
+        console.log("Categories API response:", data);
+        setCategories(Array.isArray(data.categories) ? data.categories : []);
       }
     } catch (error) {
       console.error("Error fetching categories:", error);
@@ -260,43 +305,6 @@ const TourGuideProfile = () => {
     }
   };
 
-  // Add this function to refresh user data
-  const refreshUserData = async (token) => {
-    try {
-      const userRes = await fetch(`${API_CONFIG.BASE_URL}/api/user`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json",
-        },
-      });
-
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        console.log("Refreshed user data:", userData.user);
-        console.log("Tour guide data:", userData.user.tour_guide);
-        console.log("Reviews data:", userData.user.tour_guide?.reviews);
-        setUser(userData.user);
-        setTourGuide(userData.user.tour_guide || {});
-        localStorage.setItem("user", JSON.stringify(userData.user));
-
-        // Also update the editForm with the new data
-        setEditForm({
-          name: userData.user.name || "",
-          email: userData.user.email || "",
-          phone: userData.user.phone || "",
-          bio: userData.user.tour_guide?.bio || "",
-          license_number: userData.user.tour_guide?.license_number || "",
-          experience_years: userData.user.tour_guide?.experience_years || 0,
-          hourly_rate: userData.user.tour_guide?.hourly_rate || 0,
-          languages: userData.user.tour_guide?.languages || "",
-          transportation_type:
-            userData.user.tour_guide?.transportation_type || "",
-        });
-      }
-    } catch (error) {
-      console.error("Error refreshing user data:", error);
-    }
-  };
 
   const updateTourGuideData = async (token) => {
     try {
@@ -948,19 +956,31 @@ const TourGuideProfile = () => {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Average Rating</span>
-                <span className="fw-bold text-warning">
+                <div>
                   {(() => {
                     const reviews = user?.tour_guide?.reviews || [];
                     console.log("Calculating average rating for reviews:", reviews);
                     if (reviews.length > 0) {
                       const total = reviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0);
-                      const average = (total / reviews.length).toFixed(1);
+                      const average = parseFloat((total / reviews.length).toFixed(1));
                       console.log("Total rating:", total, "Count:", reviews.length, "Average:", average);
-                      return average;
+                      return (
+                        <StarRating 
+                          rating={average} 
+                          showLabel={true}
+                          size="small"
+                        />
+                      );
                     }
-                    return "0.0";
-                  })()} ⭐
-                </span>
+                    return (
+                      <StarRating 
+                        rating={0} 
+                        showLabel={true}
+                        size="small"
+                      />
+                    );
+                  })()}
+                </div>
               </div>
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <span className="text-muted">Total Reviews</span>

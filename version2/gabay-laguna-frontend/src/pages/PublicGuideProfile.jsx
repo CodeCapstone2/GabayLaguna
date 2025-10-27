@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import API_CONFIG from "../config/api";
+import StarRating from "../components/StarRating";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../theme.css";
 
@@ -156,11 +157,13 @@ const PublicGuideProfile = () => {
               </div>
 
               <div className="mb-3">
-                <div className="d-flex align-items-center">
-                  <span className="text-warning me-2">
-                    ⭐ {averageRating}
-                  </span>
-                  <span className="text-muted">
+                <StarRating 
+                  rating={parseFloat(averageRating)} 
+                  showLabel={true}
+                  size="normal"
+                />
+                <div className="mt-1">
+                  <span className="text-muted small">
                     ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
                   </span>
                 </div>
@@ -217,16 +220,11 @@ const PublicGuideProfile = () => {
                           <h6 className="mb-1">
                             {review.tourist?.name || review.tourist?.full_name || "Anonymous Tourist"}
                           </h6>
-                          <div className="text-warning">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <i
-                                key={i}
-                                className={`fas fa-star ${
-                                  i < (review.rating || 0) ? "text-warning" : "text-muted"
-                                }`}
-                              ></i>
-                            ))}
-                          </div>
+                          <StarRating 
+                            rating={review.rating || 0} 
+                            showLabel={true}
+                            size="small"
+                          />
                         </div>
                         <small className="text-muted">
                           {review.created_at ? new Date(review.created_at).toLocaleDateString() : "Date not available"}

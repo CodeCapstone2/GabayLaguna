@@ -33,6 +33,8 @@ const GuideLocationApplications = () => {
         headers: { Accept: "application/json" },
       });
       const data = await res.json();
+      console.log("POI API Response:", data);
+      
       if (res.ok) {
         // Handle different response formats
         let poiData = [];
@@ -43,6 +45,8 @@ const GuideLocationApplications = () => {
         } else {
           poiData = data;
         }
+        
+        console.log("Processed POI data:", poiData);
         setPois(poiData);
 
         // Extract unique cities from POIs
@@ -58,11 +62,15 @@ const GuideLocationApplications = () => {
             };
           }
         });
+        console.log("Extracted cities:", Object.values(uniqueCities));
         setCities(Object.values(uniqueCities));
+      } else {
+        console.error("POI API Error:", data);
+        setError("Failed to load locations: " + (data.message || "Unknown error"));
       }
     } catch (err) {
       console.error("Failed to fetch POIs:", err);
-      setError("Failed to load locations");
+      setError("Failed to load locations: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -74,7 +82,7 @@ const GuideLocationApplications = () => {
       const filtered = pois.filter((poi) => {
         // Handle both object and ID formats
         const poiCityId = poi.city ? poi.city.id : poi.city_id;
-        return poiCityId === form.cityId;
+        return String(poiCityId) === String(form.cityId);
       });
       setFilteredPois(filtered);
     } else {
@@ -97,11 +105,18 @@ const GuideLocationApplications = () => {
     setSubmitting(true);
     setError("");
 
+    // Validate form - at least one selection is required
+    if (!form.cityId && !form.poiId) {
+      setError("Please select either a city or a specific point of interest.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       console.log("Submitting application with:", {
-        city_id: form.cityId,
-        poi_id: form.poiId,
+        city_id: form.cityId || null,
+        poi_id: form.poiId || null,
         notes: form.notes,
       });
 
@@ -126,6 +141,11 @@ const GuideLocationApplications = () => {
       console.log("API Response:", { status: res.status, data });
 
       if (!res.ok) {
+        // Handle validation errors specifically
+        if (data.errors) {
+          const errorMessages = Object.values(data.errors).flat();
+          throw new Error(errorMessages.join(', '));
+        }
         throw new Error(
           data.message || `Failed to submit application (${res.status})`
         );
@@ -233,8 +253,8 @@ const GuideLocationApplications = () => {
               {loading
                 ? "Loading POIs..."
                 : form.cityId
-                ? `Showing ${filteredPois.length} POIs in selected city`
-                : `Showing all ${pois.length} available POIs`}
+                ? `Showing ${filteredPois.length} POI${filteredPois.length !== 1 ? 's' : ''} in selected city`
+                : `Showing all ${pois.length} available POI${pois.length !== 1 ? 's' : ''}`}
             </small>
           </div>
 
@@ -255,7 +275,7 @@ const GuideLocationApplications = () => {
           <button
             className="btn btn-success"
             disabled={
-              submitting || (!form.cityId && !form.poiId && !form.notes)
+              submitting || (!form.cityId && !form.poiId)
             }
           >
             {submitting ? "Submitting..." : "Submit Application"}

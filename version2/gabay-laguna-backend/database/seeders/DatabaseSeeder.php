@@ -17,6 +17,13 @@ class DatabaseSeeder extends Seeder
 	{
 		// User::factory(10)->create();
 
+		// Seed categories first
+		$this->call([
+			CategoriesSeeder::class,
+			CitiesSeeder::class,
+			PointsOfInterestSeeder::class,
+		]);
+
 		// Ensure a default admin exists for initial access
 		$admin = User::firstOrCreate(
 			['email' => 'admin@gabaylaguna.com'],

@@ -26,6 +26,29 @@ use App\Http\Controllers\LocationController;
 */
 
 // Public routes
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'API is working',
+        'timestamp' => now()
+    ]);
+});
+
+// Public statistics
+Route::get('/statistics', function () {
+    $tourGuides = App\Models\User::where('user_type', 'guide')->count();
+    $destinations = App\Models\PointOfInterest::count();
+    $cities = App\Models\City::count();
+    $bookings = App\Models\Booking::where('status', 'completed')->count();
+    
+    return response()->json([
+        'tour_guides' => $tourGuides,
+        'destinations' => $destinations,
+        'cities' => $cities,
+        'completed_tours' => $bookings
+    ]);
+});
+
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/guide/register', [AuthController::class, 'registerGuide']);
@@ -52,10 +75,20 @@ Route::get('/guides/{guide}/reviews', [ReviewController::class, 'getGuideReviews
 Route::get('/guides/{guide}/availability', [TourGuideController::class, 'getGuideAvailability']);
 Route::get('/guides/{guide}/time-slots', [TourGuideController::class, 'getAvailableTimeSlots']);
 
+// Debug endpoint to see all guides
+Route::get('/debug/guides', function () {
+    $guides = \App\Models\TourGuide::with(['user'])->get();
+    return response()->json([
+        'total_guides' => $guides->count(),
+        'guides' => $guides
+    ]);
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user', [AuthController::class, 'user']);
+    Route::get('/user/statistics', [AuthController::class, 'getUserStatistics']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::put('/user/password', [AuthController::class, 'updatePassword']);
@@ -145,6 +178,8 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/payments/paypal', [PaymentController::class, 'processPayPalPayment']);
     Route::post('/payments/paymongo', [PaymentController::class, 'processPayMongoPayment']);
+    Route::post('/payments/xendit/invoice', [PaymentController::class, 'createXenditInvoice']);
+    Route::post('/payments/xendit/virtual-account', [PaymentController::class, 'createXenditVirtualAccount']);
     Route::get('/payments/{payment}', [PaymentController::class, 'show']);
     Route::post('/payments/{payment}/refund', [PaymentController::class, 'refund']);
 });
@@ -152,6 +187,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // Payment webhooks
 Route::post('/webhooks/paypal', [PaymentController::class, 'paypalWebhook']);
 Route::post('/webhooks/paymongo', [PaymentController::class, 'paymongoWebhook']);
+Route::post('/webhooks/xendit', [PaymentController::class, 'xenditWebhook']);
 
 // Health check
 Route::get('/health', function () {

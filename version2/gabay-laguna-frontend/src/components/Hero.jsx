@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   FaUsers,
@@ -7,11 +7,35 @@ import {
   FaArrowRight,
   FaStar,
 } from "react-icons/fa";
+import API_CONFIG from "../config/api";
 
 const Hero = () => {
   const location = useLocation();
+  const [statistics, setStatistics] = useState({
+    tour_guides: 0,
+    destinations: 0,
+    cities: 0,
+    completed_tours: 0
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/statistics`);
+      if (response.ok) {
+        const data = await response.json();
+        setStatistics(data);
+      }
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   useEffect(() => {
+    fetchStatistics();
+    
     if (location.hash === "#features") {
       const featureSection = document.getElementById("features");
       if (featureSection) {
@@ -193,13 +217,29 @@ const Hero = () => {
               <div className="row g-3 mb-4">
                 <div className="col-6">
                   <div className="bg-white bg-opacity-10 rounded-3 p-3 border border-white border-opacity-25">
-                    <div className="h4 fw-bold mb-1">50+</div>
+                    {loadingStats ? (
+                      <div className="h4 fw-bold mb-1">
+                        <div className="spinner-border spinner-border-sm" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h4 fw-bold mb-1">{statistics.tour_guides}+</div>
+                    )}
                     <div className="small text-white-75">Tour Guides</div>
                   </div>
                 </div>
                 <div className="col-6">
                   <div className="bg-white bg-opacity-10 rounded-3 p-3 border border-white border-opacity-25">
-                    <div className="h4 fw-bold mb-1">100+</div>
+                    {loadingStats ? (
+                      <div className="h4 fw-bold mb-1">
+                        <div className="spinner-border spinner-border-sm" role="status">
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h4 fw-bold mb-1">{statistics.destinations}+</div>
+                    )}
                     <div className="small text-white-75">Destinations</div>
                   </div>
                 </div>

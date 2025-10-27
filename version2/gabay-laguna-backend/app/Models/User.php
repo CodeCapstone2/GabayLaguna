@@ -24,6 +24,7 @@ class User extends Authenticatable
         'password',
         'user_type',
         'phone',
+        'nationality',
         'profile_picture',
         'is_verified',
         'is_active',

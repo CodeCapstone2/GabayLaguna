@@ -11,36 +11,75 @@ const GuideAvailabilityWidget = () => {
   const [guideAvailability, setGuideAvailability] = useState(null);
 
   useEffect(() => {
+    testApiConnection();
     loadAvailableGuides();
   }, []);
+
+  const testApiConnection = async () => {
+    try {
+      console.log("Testing API connection...");
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/health`);
+      console.log("API Health Check:", response.data);
+      
+      // Also test the debug endpoint
+      console.log("Testing debug guides endpoint...");
+      const debugResponse = await axios.get(`${API_CONFIG.BASE_URL}/api/debug/guides`);
+      console.log("Debug Guides Response:", debugResponse.data);
+    } catch (error) {
+      console.error("API Health Check Failed:", error);
+    }
+  };
 
   const loadAvailableGuides = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      console.log("Loading guides from:", `${API_CONFIG.BASE_URL}/api/guides`);
       const response = await axios.get(`${API_CONFIG.BASE_URL}/api/guides`);
-      console.log("API Response:", response.data);
+      console.log("Full API Response:", response);
+      console.log("API Response Data:", response.data);
 
       // Ensure guides is always an array
       let guidesData = [];
       if (
         response.data &&
         response.data.tour_guides &&
+        response.data.tour_guides.data &&
+        Array.isArray(response.data.tour_guides.data)
+      ) {
+        // Handle paginated response
+        guidesData = response.data.tour_guides.data;
+        console.log("Found guides in tour_guides.data (paginated):", guidesData.length);
+      } else if (
+        response.data &&
+        response.data.tour_guides &&
         Array.isArray(response.data.tour_guides)
       ) {
+        // Handle non-paginated response
         guidesData = response.data.tour_guides;
+        console.log("Found guides in tour_guides (non-paginated):", guidesData.length);
       } else if (Array.isArray(response.data)) {
         guidesData = response.data;
+        console.log("Found guides in direct array:", guidesData.length);
       } else {
         console.warn("Unexpected API response format:", response.data);
+        console.warn("Response structure:", {
+          hasData: !!response.data,
+          hasTourGuides: !!(response.data && response.data.tour_guides),
+          hasTourGuidesData: !!(response.data && response.data.tour_guides && response.data.tour_guides.data),
+          isArray: Array.isArray(response.data),
+          isTourGuidesArray: Array.isArray(response.data?.tour_guides)
+        });
         guidesData = [];
       }
 
+      console.log("Final guides data:", guidesData);
       setGuides(guidesData);
     } catch (error) {
       console.error("Error loading guides:", error);
-      setError("Unable to load guides. Please check your connection and try again.");
+      console.error("Error details:", error.response?.data);
+      setError(`Unable to load guides: ${error.response?.data?.message || error.message}`);
       setGuides([]); // Ensure guides is always an array even on error
     } finally {
       setLoading(false);
@@ -122,10 +161,30 @@ const GuideAvailabilityWidget = () => {
 
           {/* Guide Selection */}
           <div className="mb-4">
-            <label className="form-label fw-semibold">
-              <i className="fas fa-user me-2"></i>
-              Select a Guide
-            </label>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <label className="form-label fw-semibold mb-0">
+                <i className="fas fa-user me-2"></i>
+                Select a Guide
+              </label>
+              <div className="btn-group" role="group">
+                <button
+                  className="btn btn-outline-primary btn-sm"
+                  onClick={loadAvailableGuides}
+                  disabled={loading}
+                >
+                  <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''} me-1`}></i>
+                  Refresh
+                </button>
+                <button
+                  className="btn btn-outline-info btn-sm"
+                  onClick={testApiConnection}
+                  disabled={loading}
+                >
+                  <i className="fas fa-bug me-1"></i>
+                  Test API
+                </button>
+              </div>
+            </div>
             {Array.isArray(guides) && guides.length > 0 ? (
               <select
                 className="form-select"
@@ -150,6 +209,18 @@ const GuideAvailabilityWidget = () => {
               <div className="alert alert-info" role="alert">
                 <i className="fas fa-info-circle me-2"></i>
                 No guides available at the moment. Please try again later.
+                <br />
+                <small className="text-muted">
+                  Make sure the backend server is running and there are guides in the database.
+                </small>
+                <br />
+                <small className="text-muted">
+                  API URL: {API_CONFIG.BASE_URL}/api/guides
+                </small>
+                <br />
+                <small className="text-muted">
+                  Guides loaded: {guides.length}
+                </small>
               </div>
             )}
           </div>
@@ -201,7 +272,9 @@ const GuideAvailabilityWidget = () => {
                 Available Times
               </h6>
 
-              {guideAvailability.availabilities &&
+              {guideAvailability && 
+              guideAvailability.availabilities && 
+              Array.isArray(guideAvailability.availabilities) && 
               guideAvailability.availabilities.length > 0 ? (
                 <div className="row">
                   {guideAvailability.availabilities

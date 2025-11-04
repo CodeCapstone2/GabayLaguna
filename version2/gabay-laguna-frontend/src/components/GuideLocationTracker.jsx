@@ -253,7 +253,7 @@ const GuideLocationTracker = ({ bookingId, guide, poi }) => {
         <div className="guide-info mb-3 p-3 bg-light rounded">
           <div className="d-flex align-items-center">
             <img
-              src={guide.profile_picture || "/assets/guides/default.jpg"}
+              src={guide.profile_picture || "/assets/logo.png"}
               alt={guide.name}
               className="rounded-circle me-3"
               style={{ width: "50px", height: "50px", objectFit: "cover" }}

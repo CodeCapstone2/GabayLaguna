@@ -13,6 +13,7 @@ class Booking extends Model
         'tourist_id',
         'tour_guide_id',
         'point_of_interest_id',
+        'itinerary_id',
         'tour_date',
         'start_time',
         'end_time',
@@ -21,6 +22,7 @@ class Booking extends Model
         'special_requests',
         'status',
         'total_amount',
+        'itinerary_customizations',
     ];
 
     protected $casts = [
@@ -28,6 +30,7 @@ class Booking extends Model
         'start_time' => 'datetime:H:i',
         'end_time' => 'datetime:H:i',
         'total_amount' => 'decimal:2',
+        'itinerary_customizations' => 'array',
     ];
 
     /**
@@ -100,5 +103,36 @@ class Booking extends Model
     public function guideLocations()
     {
         return $this->hasMany(GuideLocation::class);
+    }
+
+    /**
+     * Get the itinerary for this booking
+     */
+    public function itinerary()
+    {
+        return $this->belongsTo(Itinerary::class);
+    }
+
+    /**
+     * Check if this booking is itinerary-based
+     */
+    public function isItineraryBased()
+    {
+        return !is_null($this->itinerary_id);
+    }
+
+    /**
+     * Get the itinerary items for this booking
+     */
+    public function itineraryItems()
+    {
+        return $this->hasManyThrough(
+            ItineraryItem::class,
+            Itinerary::class,
+            'id',
+            'itinerary_id',
+            'itinerary_id',
+            'id'
+        );
     }
 }

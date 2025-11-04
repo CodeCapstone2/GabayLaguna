@@ -14,9 +14,9 @@ REACT_APP_API_BASE_URL=http://localhost:8000
 ```
 
 #### **Option B: Update config.js**
-Update `public/config.js` with your actual backend URL:
+Update `public/config.js` with your backend URL:
 ```javascript
-window.__API_BASE_URL__ = 'http://localhost:8000'; // or your actual backend URL
+window.__API_BASE_URL__ = 'http://localhost:8000';
 ```
 
 ### **Step 2: Backend CORS Configuration**
@@ -51,18 +51,6 @@ php artisan serve
 ```bash
 cd gabay-laguna-frontend
 npm start
-```
-
-## 🔧 **For Production (Vercel)**
-
-### **Environment Variables in Vercel:**
-1. Go to your Vercel project dashboard
-2. Settings → Environment Variables
-3. Add: `REACT_APP_API_BASE_URL` = `https://your-backend-url.vercel.app`
-
-### **Update config.js for Production:**
-```javascript
-window.__API_BASE_URL__ = 'https://your-backend-url.vercel.app';
 ```
 
 ## 🐛 **Troubleshooting**

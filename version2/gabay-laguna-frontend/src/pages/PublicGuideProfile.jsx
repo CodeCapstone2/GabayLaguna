@@ -27,11 +27,26 @@ const PublicGuideProfile = () => {
       
       console.log("Fetching guide data for ID:", guideId);
       
-      // Fetch guide details
+      // Fetch guide details with all related data
       const guideResponse = await axios.get(`${API_CONFIG.BASE_URL}/api/guides/${guideId}`);
       console.log("Guide response:", guideResponse.data);
       const guideData = guideResponse.data.tour_guide || guideResponse.data;
       setGuide(guideData);
+      
+      // Also fetch availability if not included
+      if (!guideData.availabilities || guideData.availabilities.length === 0) {
+        try {
+          const availResponse = await axios.get(`${API_CONFIG.BASE_URL}/api/guides/${guideId}/availability`);
+          if (availResponse.data && availResponse.data.availabilities) {
+            setGuide(prev => ({
+              ...prev,
+              availabilities: availResponse.data.availabilities
+            }));
+          }
+        } catch (availError) {
+          console.log("Could not fetch availability:", availError);
+        }
+      }
       
       // Fetch guide reviews
       try {
@@ -135,12 +150,12 @@ const PublicGuideProfile = () => {
         <div className="col-lg-4 mb-4">
           <div className="card shadow-sm">
             <img
-              src={guide.user?.profile_picture || "/assets/default-guide.jpg"}
+              src={guide.user?.profile_picture || "/assets/logo.png"}
               className="card-img-top"
               alt={guide.user?.name}
               style={{ height: "300px", objectFit: "cover" }}
               onError={(e) => {
-                e.target.src = "/assets/default-guide.jpg";
+                e.target.src = "/assets/logo.png";
               }}
             />
             <div className="card-body">
@@ -169,9 +184,96 @@ const PublicGuideProfile = () => {
                 </div>
               </div>
 
-              <div className="mb-3">
-                <h6>About</h6>
-                <p className="card-text">{guide.bio || "No bio available"}</p>
+              {/* Bio - Prominently Displayed */}
+              <div className="mb-4">
+                <h6 className="fw-bold mb-2">
+                  <i className="fas fa-user-circle me-2 text-primary"></i>
+                  Biography
+                </h6>
+                <p className="card-text" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                  {guide.bio || "No bio available. This guide hasn't added a biography yet."}
+                </p>
+              </div>
+
+              {/* Services - Displayed */}
+              <div className="mb-4">
+                <h6 className="fw-bold mb-2">
+                  <i className="fas fa-concierge-bell me-2 text-primary"></i>
+                  Services
+                </h6>
+                <div className="d-flex flex-column gap-2">
+                  {guide.specializations && guide.specializations.length > 0 ? (
+                    guide.specializations.map((spec, idx) => (
+                      <span key={idx} className="badge bg-info text-dark">
+                        {spec.category?.name || spec.category || spec}
+                      </span>
+                    ))
+                  ) : (
+                    <div>
+                      {guide.categories && guide.categories.length > 0 ? (
+                        guide.categories.map((cat, idx) => (
+                          <span key={idx} className="badge bg-info text-dark me-1">
+                            {cat.name || cat}
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-muted small mb-0">
+                          Services not specified yet.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  {guide.transportation_type && (
+                    <span className="badge bg-secondary">
+                      <i className="fas fa-car me-1"></i>
+                      Transportation: {guide.transportation_type}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Availability - Displayed */}
+              <div className="mb-4">
+                <h6 className="fw-bold mb-2">
+                  <i className="fas fa-calendar-check me-2 text-primary"></i>
+                  Availability
+                </h6>
+                <div className="text-muted small">
+                  {guide.is_available ? (
+                    <span className="badge bg-success me-2">
+                      <i className="fas fa-check-circle me-1"></i>
+                      Currently Available
+                    </span>
+                  ) : (
+                    <span className="badge bg-secondary me-2">
+                      <i className="fas fa-times-circle me-1"></i>
+                      Currently Unavailable
+                    </span>
+                  )}
+                  {guide.availabilities && guide.availabilities.length > 0 ? (
+                    <div className="mt-2">
+                      <p className="mb-1 fw-bold">Available Days:</p>
+                      <div className="d-flex flex-wrap gap-1">
+                        {guide.availabilities
+                          .filter(avail => avail.is_available)
+                          .map((avail, idx) => (
+                            <span key={idx} className="badge bg-light text-dark">
+                              {avail.day_of_week?.charAt(0).toUpperCase() + avail.day_of_week?.slice(1) || 'N/A'} 
+                              {avail.start_time && avail.end_time && (
+                                <span className="ms-1">
+                                  ({avail.start_time} - {avail.end_time})
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-muted small mb-0 mt-2">
+                      Check availability when booking.
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div className="mb-3">

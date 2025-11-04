@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "../theme.css";
 import PaymentModal from "../components/PaymentModal";
 import ReviewModal from "../components/ReviewModal";
 import API_CONFIG from "../config/api";
@@ -16,6 +17,8 @@ const MyBookings = () => {
   const [showLocationTracker, setShowLocationTracker] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -211,14 +214,28 @@ const MyBookings = () => {
     <div className="container py-5">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
-          <h2 className="fw-bold text-success">📋 My Bookings</h2>
-          <p className="text-muted mb-0">
+          <h2 
+            className="fw-bold"
+            style={{
+              color: "var(--color-success)",
+              fontFamily: "var(--font-family-heading)",
+            }}
+          >
+            📋 My Bookings
+          </h2>
+          <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
             Manage your tour bookings and view booking history
           </p>
         </div>
         <button
           className="btn btn-outline-primary"
           onClick={() => navigate("/cities")}
+          style={{
+            borderRadius: "var(--radius-lg)",
+            borderColor: "var(--color-primary)",
+            color: "var(--color-primary)",
+            fontWeight: "600",
+          }}
         >
           🗺️ Explore More Tours
         </button>
@@ -311,18 +328,32 @@ const MyBookings = () => {
 
             return (
               <div key={booking.id} className="col-12 mb-4">
-                <div className="card shadow-sm border-0">
+                <div 
+                  className="card shadow-sm"
+                  style={{
+                    borderRadius: "var(--radius-lg)",
+                    backgroundColor: "var(--color-bg)",
+                    border: "1px solid var(--color-border)",
+                  }}
+                >
                   <div className="card-body">
                     <div className="row align-items-center">
                       <div className="col-md-8">
                         <div className="d-flex justify-content-between align-items-start mb-2">
-                          <h5 className="card-title mb-0">
+                          <h5 
+                            className="card-title mb-0"
+                            style={{
+                              color: "var(--color-text)",
+                              fontFamily: "var(--font-family-heading)",
+                              fontWeight: "600",
+                            }}
+                          >
                             {bookingInfo.poi_name}
                           </h5>
                           {getStatusBadge(bookingInfo.status)}
                         </div>
 
-                        <div className="row text-muted small mb-2">
+                        <div className="row small mb-2" style={{ color: "var(--color-text-secondary)" }}>
                           <div className="col-md-6">
                             <p className="mb-1">
                               <strong>👤 Guide:</strong>{" "}
@@ -372,9 +403,19 @@ const MyBookings = () => {
                           {bookingInfo.status === "confirmed" && (
                             <button
                               className="btn btn-outline-success btn-sm"
-                              onClick={() =>
-                                alert("Contact details will be sent via email")
-                              }
+                              onClick={() => {
+                                setSelectedBooking({
+                                  id: booking.id,
+                                  guide_name: bookingInfo.guide_name,
+                                  poi_name: bookingInfo.poi_name,
+                                  date: bookingInfo.date,
+                                });
+                                setShowContactModal(true);
+                              }}
+                              style={{
+                                borderRadius: "var(--radius-md)",
+                                fontWeight: "600",
+                              }}
                             >
                               📞 Contact Guide
                             </button>
@@ -452,16 +493,16 @@ const MyBookings = () => {
                           <button
                             className="btn btn-outline-secondary btn-sm"
                             onClick={() => {
-                              // Show booking details in a modal or alert
-                              alert(`Booking Details:\n
-Status: ${bookingInfo.status}\n
-Guide: ${bookingInfo.guide_name}\n
-Location: ${bookingInfo.poi_name}\n
-Date: ${formatDate(bookingInfo.date)}\n
-Time: ${formatTime(bookingInfo.start_time)}\n
-Duration: ${bookingInfo.duration} hours\n
-Participants: ${bookingInfo.participants}\n
-Total: PHP ${bookingInfo.total_amount || "0.00"}`);
+                              setSelectedBooking({
+                                id: booking.id,
+                                ...bookingInfo,
+                                booking: booking,
+                              });
+                              setShowDetailsModal(true);
+                            }}
+                            style={{
+                              borderRadius: "var(--radius-md)",
+                              fontWeight: "600",
                             }}
                           >
                             📋 View Details
@@ -543,6 +584,365 @@ Total: PHP ${bookingInfo.total_amount || "0.00"}`);
             alert("Thanks for your feedback!");
           }}
         />
+      )}
+
+      {/* Contact Guide Modal */}
+      {showContactModal && selectedBooking && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowContactModal(false)}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-content"
+              style={{
+                borderRadius: "var(--radius-2xl)",
+                border: "none",
+                boxShadow: "var(--shadow-xl)",
+              }}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  background: "linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%)",
+                  borderRadius: "var(--radius-2xl) var(--radius-2xl) 0 0",
+                  border: "none",
+                }}
+              >
+                <h5 className="modal-title text-white d-flex align-items-center">
+                  <i className="fas fa-phone me-2"></i>
+                  Contact Your Guide
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowContactModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body p-4">
+                <h6
+                  className="text-center mb-3"
+                  style={{
+                    color: "var(--color-text)",
+                    fontFamily: "var(--font-family-heading)",
+                    fontWeight: "600",
+                  }}
+                >
+                  <i className="fas fa-envelope me-2 text-success"></i>
+                  Contact Information
+                </h6>
+                <p
+                  className="text-center mb-4"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
+                  Contact details for <strong>{selectedBooking.guide_name}</strong> will be sent to your registered email address.
+                </p>
+                <div
+                  className="alert alert-info mb-0"
+                  style={{
+                    borderRadius: "var(--radius-lg)",
+                    background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+                    border: "none",
+                    borderLeft: "4px solid var(--color-info)",
+                  }}
+                >
+                  <i className="fas fa-info-circle me-2"></i>
+                  <strong>Note:</strong> You will receive an email with the guide's contact information shortly.
+                </div>
+              </div>
+              <div
+                className="modal-footer"
+                style={{ borderTop: "1px solid var(--color-border)" }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowContactModal(false)}
+                  style={{
+                    borderRadius: "var(--radius-lg)",
+                    fontWeight: "600",
+                  }}
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={() => {
+                    setShowContactModal(false);
+                    alert("Contact details will be sent to your email!");
+                  }}
+                  style={{
+                    background: "linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%)",
+                    border: "none",
+                    borderRadius: "var(--radius-lg)",
+                    fontWeight: "600",
+                  }}
+                >
+                  <i className="fas fa-paper-plane me-2"></i>
+                  Send Contact Info
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Booking Details Modal */}
+      {showDetailsModal && selectedBooking && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowDetailsModal(false)}
+        >
+          <div
+            className="modal-dialog modal-lg modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-content"
+              style={{
+                borderRadius: "var(--radius-2xl)",
+                border: "none",
+                boxShadow: "var(--shadow-xl)",
+              }}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  background: "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                  borderRadius: "var(--radius-2xl) var(--radius-2xl) 0 0",
+                  border: "none",
+                }}
+              >
+                <h5 className="modal-title text-white d-flex align-items-center">
+                  <i className="fas fa-file-alt me-2"></i>
+                  Booking Details
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowDetailsModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="row g-3">
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-user-circle me-2 text-primary"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Guide:</strong>
+                      </div>
+                      <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                        {selectedBooking.guide_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-map-marker-alt me-2 text-danger"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Location:</strong>
+                      </div>
+                      <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                        {selectedBooking.poi_name}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-calendar me-2 text-success"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Date:</strong>
+                      </div>
+                      <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                        {formatDate(selectedBooking.date)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-clock me-2 text-warning"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Time:</strong>
+                      </div>
+                      <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                        {formatTime(selectedBooking.start_time)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-hourglass-half me-2 text-info"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Duration:</strong>
+                      </div>
+                      <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                        {selectedBooking.duration} hour(s)
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-users me-2 text-primary"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Participants:</strong>
+                      </div>
+                      <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                        {selectedBooking.participants}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-tag me-2 text-success"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Status:</strong>
+                      </div>
+                      <p className="mb-0">
+                        {getStatusBadge(selectedBooking.status)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div
+                      className="p-3"
+                      style={{
+                        backgroundColor: "var(--color-bg-secondary)",
+                        borderRadius: "var(--radius-lg)",
+                        border: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div className="d-flex align-items-center mb-2">
+                        <i className="fas fa-money-bill-wave me-2 text-success"></i>
+                        <strong style={{ color: "var(--color-text)" }}>Total Amount:</strong>
+                      </div>
+                      <p className="mb-0" style={{ color: "var(--color-success)", fontWeight: "600" }}>
+                        PHP {selectedBooking.total_amount || "0.00"}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedBooking.special_requests && (
+                    <div className="col-12">
+                      <div
+                        className="p-3"
+                        style={{
+                          backgroundColor: "var(--color-bg-secondary)",
+                          borderRadius: "var(--radius-lg)",
+                          border: "1px solid var(--color-border)",
+                        }}
+                      >
+                        <div className="d-flex align-items-center mb-2">
+                          <i className="fas fa-sticky-note me-2 text-warning"></i>
+                          <strong style={{ color: "var(--color-text)" }}>Special Requests:</strong>
+                        </div>
+                        <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                          {selectedBooking.special_requests}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedBooking.poi_address && (
+                    <div className="col-12">
+                      <div
+                        className="p-3"
+                        style={{
+                          backgroundColor: "var(--color-bg-secondary)",
+                          borderRadius: "var(--radius-lg)",
+                          border: "1px solid var(--color-border)",
+                        }}
+                      >
+                        <div className="d-flex align-items-center mb-2">
+                          <i className="fas fa-map-pin me-2 text-danger"></i>
+                          <strong style={{ color: "var(--color-text)" }}>Address:</strong>
+                        </div>
+                        <p className="mb-0" style={{ color: "var(--color-text-secondary)" }}>
+                          {selectedBooking.poi_address}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div
+                className="modal-footer"
+                style={{ borderTop: "1px solid var(--color-border)" }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => setShowDetailsModal(false)}
+                  style={{
+                    background: "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                    border: "none",
+                    borderRadius: "var(--radius-lg)",
+                    fontWeight: "600",
+                  }}
+                >
+                  <i className="fas fa-check me-2"></i>
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

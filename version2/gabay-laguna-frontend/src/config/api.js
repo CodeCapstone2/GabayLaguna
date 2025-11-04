@@ -1,13 +1,34 @@
 import axios from "axios";
 
-// API Configuration
-// Production-ready API configuration for Vercel
-const API_CONFIG = {
-  // Use environment variable in production, fallback to config.js, then localhost for development
-  BASE_URL: process.env.REACT_APP_API_BASE_URL || window.__API_BASE_URL__ || "http://localhost:8000",
+// API Configuration for local development
+// Force localhost for local development - ignore production URLs
+const getBaseURL = () => {
+  // If in development mode or localhost, always use localhost:8000
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '') {
+    return "http://localhost:8000";
+  }
+  
+  // Otherwise, check environment variable first, then config.js, then fallback
+  const envUrl = process.env.REACT_APP_API_BASE_URL;
+  const configUrl = window.__API_BASE_URL__;
+  
+  // If config.js has an invalid/placeholder URL, use localhost
+  if (configUrl && (configUrl.includes('your-backend-domain') || configUrl.includes('000webhostapp') || configUrl.includes('infinityfree'))) {
+    console.warn('Invalid API URL detected, using localhost:8000');
+    return "http://localhost:8000";
+  }
+  
+  return envUrl || configUrl || "http://localhost:8000";
 };
 
-// Configure axios defaults for production
+const API_CONFIG = {
+  BASE_URL: getBaseURL(),
+};
+
+// Log the API URL being used (for debugging)
+console.log('API Base URL configured:', API_CONFIG.BASE_URL);
+
+// Configure axios defaults
 axios.defaults.baseURL = API_CONFIG.BASE_URL;
 axios.defaults.headers.common["Accept"] = "application/json";
 axios.defaults.headers.common["Content-Type"] = "application/json";
@@ -20,8 +41,6 @@ axios.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Add any production-specific headers here if needed
 
     return config;
   },

@@ -311,12 +311,29 @@ const BookingPage = () => {
                 {/* Guide Selection */}
                 {!guide && (
                   <div className="mb-4">
-                    <label className="form-label">👤 Select a Guide</label>
+                    <label className="form-label">
+                      <i className="fas fa-user me-2"></i>
+                      Select a Tour Guide
+                    </label>
+                    <p className="text-muted small mb-2">
+                      Browse available tour guides with their Name, Rating, and Price. 
+                      Select a guide profile to view their Bio, Services, and Availability.
+                    </p>
                     <button
                       type="button"
                       className="btn btn-outline-primary w-100"
-                      onClick={() => navigate(`/poi/${poi?.id}/guides`)}
+                      onClick={() => {
+                        // Navigate to guide selection page
+                        if (poi?.id) {
+                          navigate(`/poi/${poi.id}/guides`, {
+                            state: { poi: poi }
+                          });
+                        } else {
+                          navigate('/cities');
+                        }
+                      }}
                     >
+                      <i className="fas fa-users me-2"></i>
                       Browse Available Guides
                     </button>
                     {errors.tour_guide_id && (
@@ -352,7 +369,7 @@ const BookingPage = () => {
                         <img
                           src={
                             guide.profile_picture ||
-                            "/assets/guides/default.jpg"
+                            "/assets/logo.png"
                           }
                           alt={guide.name}
                           className="img-fluid rounded"
@@ -404,8 +421,14 @@ const BookingPage = () => {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary mt-3"
-                      onClick={() => setGuide(null)}
+                      onClick={() => {
+                        // Change Guide - allows user to go back and select a different guide
+                        // This aligns with the activity diagram where tourist can change guide if not satisfied
+                        setGuide(null);
+                        setBooking(prev => ({ ...prev, tour_guide_id: "" }));
+                      }}
                     >
+                      <i className="fas fa-exchange-alt me-2"></i>
                       Change Guide
                     </button>
                   </div>

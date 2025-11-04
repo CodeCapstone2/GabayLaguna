@@ -2,14 +2,11 @@ import React from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import About from "./components/About";
-import Features from "./components/Features";
+import PublicLandingPage from "./components/PublicLandingPage";
 import Footer from "./components/Footer";
 import Login from "./pages/Login";
 import SignupTourist from "./pages/SignupTourist";
 import SignupGuide from "./pages/SignupGuide";
-import AdminLogin from "./pages/AdminLogin";
 import TouristDashboard from "./pages/TouristDashboard";
 import GuideDashboard from "./pages/GuideDashboard";
 import TouristProfile from "./pages/TouristProfile";
@@ -25,7 +22,6 @@ import CategoryList from "./pages/CategoryList";
 import POIList from "./pages/POIList";
 import ProtectedRoute from "./components/ProtectedRoute";
 import GuideLocationApplications from "./pages/GuideLocationApplications";
-import GuideDutyLocations from "./pages/GuideDutyLocations";
 import GuideSpotSuggestions from "./pages/GuideSpotSuggestions";
 import AdminLocationApplications from "./pages/AdminLocationApplications";
 import AdminSpotSuggestions from "./pages/AdminSpotSuggestions";
@@ -34,6 +30,9 @@ import AdminReports from "./pages/AdminReports";
 import TouristReviews from "./pages/TouristReviews";
 import GuideReviews from "./pages/GuideReviews";
 import PublicGuideProfile from "./pages/PublicGuideProfile";
+import Itineraries from "./pages/Itineraries";
+import ItineraryDetail from "./pages/ItineraryDetail";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 
@@ -43,7 +42,6 @@ const App = () => {
     "/login",
     "/signup/tourist",
     "/signup/guide",
-    "/admin/login",
   ];
   const isPublic = publicPaths.includes(location.pathname);
   const isHomePage = location.pathname === "/";
@@ -64,18 +62,11 @@ const App = () => {
                 <Routes>
                   <Route
                     path="/"
-                    element={
-                      <>
-                        <Hero />
-                        <About />
-                        <Features />
-                      </>
-                    }
+                    element={<PublicLandingPage />}
                   />
                   <Route path="/login" element={<Login />} />
                   <Route path="/signup/tourist" element={<SignupTourist />} />
                   <Route path="/signup/guide" element={<SignupGuide />} />
-                  <Route path="/admin/login" element={<AdminLogin />} />
                   <Route
                     path="/tourist-dashboard"
                     element={<TouristDashboard />}
@@ -83,7 +74,14 @@ const App = () => {
                   <Route path="/guide-dashboard" element={<GuideDashboard />} />
                   <Route path="/tourist-profile" element={<TouristProfile />} />
                   <Route path="/guide-profile" element={<TourGuideProfile />} />
-                  <Route path="/admin-dashboard" element={<AdminDashboard />} />
+                  <Route
+                    path="/admin-dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={["admin"]}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route
                     path="/booking/:guideId/:poiId"
                     element={<BookingPage />}
@@ -99,20 +97,15 @@ const App = () => {
                   <Route path="/city/:cityId/pois" element={<POIs />} />
                   <Route path="/poi/:poiId" element={<POIs />} />
                   <Route path="/poi/:poiId/guides" element={<POIGuides />} />
+                  <Route path="/itineraries" element={<Itineraries />} />
+                  <Route path="/itineraries/:id" element={<ItineraryDetail />} />
+                  <Route path="/payment/success" element={<PaymentSuccess />} />
                   {/* Guide-only routes */}
                   <Route
                     path="/guide/location-applications"
                     element={
                       <ProtectedRoute allowedRoles={["guide"]}>
                         <GuideLocationApplications />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/guide/duty-locations"
-                    element={
-                      <ProtectedRoute allowedRoles={["guide"]}>
-                        <GuideDutyLocations />
                       </ProtectedRoute>
                     }
                   />

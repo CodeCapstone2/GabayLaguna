@@ -11,6 +11,7 @@ use App\Models\GuideSpecialization;
 use App\Models\Booking;
 use App\Models\Review;
 use App\Models\Payment;
+use App\Models\SpotSuggestion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -629,5 +630,72 @@ class TourGuideController extends Controller
             ], 500);
         }
 
+    }
+
+    /**
+     * Get all spot suggestions for the authenticated guide
+     */
+    public function getSpotSuggestions(Request $request)
+    {
+        $guide = $request->user()->tourGuide;
+        
+        if (!$guide) {
+            return response()->json([
+                'message' => 'Tour guide profile not found'
+            ], 404);
+        }
+
+        $suggestions = SpotSuggestion::where('tour_guide_id', $guide->id)
+            ->with(['city'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'suggestions' => $suggestions
+        ]);
+    }
+
+    /**
+     * Submit a new spot suggestion
+     */
+    public function submitSpotSuggestion(Request $request)
+    {
+        $guide = $request->user()->tourGuide;
+        
+        if (!$guide) {
+            return response()->json([
+                'message' => 'Tour guide profile not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'city_id' => 'required|exists:cities,id',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $suggestion = SpotSuggestion::create([
+            'tour_guide_id' => $guide->id,
+            'name' => $request->name,
+            'description' => $request->description,
+            'city_id' => $request->city_id,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => 'Spot suggestion submitted successfully',
+            'suggestion' => $suggestion->load('city')
+        ], 201);
     }
 }

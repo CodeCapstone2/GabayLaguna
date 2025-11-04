@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import InteractiveMap from "../components/InteractiveMap";
 import GuideAvailabilityWidget from "../components/GuideAvailabilityWidget";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "../theme.css";
 
 const TouristDashboard = () => {
   const navigate = useNavigate();
@@ -42,11 +43,14 @@ const TouristDashboard = () => {
         <div>
           <h1
             className="fw-bold mb-3"
-            style={{ color: "var(--color-primary)" }}
+            style={{ 
+              color: "var(--color-primary)",
+              fontFamily: "var(--font-family-heading)",
+            }}
           >
             Welcome back, {user?.name || user?.fullName || "Tourist"}!
           </h1>
-          <p className="lead mb-0">
+          <p className="lead mb-0" style={{ color: "var(--color-text-secondary)" }}>
             Discover the beautiful province of Laguna with our expert local
             guides.
           </p>
@@ -55,6 +59,12 @@ const TouristDashboard = () => {
           <button
             className="btn btn-outline-primary"
             onClick={() => navigate("/tourist-profile")}
+            style={{
+              borderRadius: "var(--radius-lg)",
+              borderColor: "var(--color-primary)",
+              color: "var(--color-primary)",
+              fontWeight: "600",
+            }}
           >
             <i className="fas fa-user me-2"></i>
             View Profile
@@ -64,19 +74,47 @@ const TouristDashboard = () => {
 
       <div className="row g-4 mb-5">
         <div className="col-md-6">
-          <div className="card h-100">
+          <div 
+            className="card h-100"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              transition: "var(--transition-normal)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "var(--shadow-xl)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "var(--shadow-md)";
+            }}
+          >
             <div className="card-body text-center p-4">
-              <div className="mb-3">
-                <i className="fas fa-map-marked-alt fa-3x text-primary"></i>
-              </div>
-              <h4 className="card-title mb-3">Explore Tours</h4>
-              <p className="card-text mb-4">
+              <h4 
+                className="card-title mb-3"
+                style={{ 
+                  color: "var(--color-primary)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                }}
+              >
+                Explore Tours
+              </h4>
+              <p className="card-text mb-4" style={{ color: "var(--color-text-secondary)" }}>
                 Discover Points of Interest (POIs), connect with local guides,
                 and book your next adventure.
               </p>
               <button
                 className="btn btn-primary btn-lg"
                 onClick={() => navigate("/cities")}
+                style={{
+                  background: "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                  border: "none",
+                  borderRadius: "var(--radius-lg)",
+                  fontWeight: "600",
+                }}
               >
                 <i className="fas fa-compass me-2"></i>
                 Start Exploring
@@ -85,19 +123,47 @@ const TouristDashboard = () => {
           </div>
         </div>
         <div className="col-md-6">
-          <div className="card h-100">
+          <div 
+            className="card h-100"
+            style={{
+              borderRadius: "var(--radius-lg)",
+              backgroundColor: "var(--color-bg)",
+              border: "1px solid var(--color-border)",
+              transition: "var(--transition-normal)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-5px)";
+              e.currentTarget.style.boxShadow = "var(--shadow-xl)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = "var(--shadow-md)";
+            }}
+          >
             <div className="card-body text-center p-4">
-              <div className="mb-3">
-                <i className="fas fa-calendar-check fa-3x text-success"></i>
-              </div>
-              <h4 className="card-title mb-3">My Bookings</h4>
-              <p className="card-text mb-4">
+              <h4 
+                className="card-title mb-3"
+                style={{ 
+                  color: "var(--color-success)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                }}
+              >
+                My Bookings
+              </h4>
+              <p className="card-text mb-4" style={{ color: "var(--color-text-secondary)" }}>
                 View and manage your tour bookings, check status, and access
                 booking history.
               </p>
               <button
                 className="btn btn-success btn-lg"
                 onClick={() => navigate("/my-bookings")}
+                style={{
+                  background: "linear-gradient(135deg, var(--color-success) 0%, var(--color-success-light) 100%)",
+                  border: "none",
+                  borderRadius: "var(--radius-lg)",
+                  fontWeight: "600",
+                }}
               >
                 <i className="fas fa-list me-2"></i>
                 View Bookings
@@ -114,15 +180,32 @@ const TouristDashboard = () => {
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-header">
-          <h4 className="mb-0">
-            <i className="fas fa-globe-americas me-2 text-primary"></i>
+      <div 
+        className="card"
+        style={{
+          borderRadius: "var(--radius-lg)",
+          backgroundColor: "var(--color-bg)",
+          border: "1px solid var(--color-border)",
+        }}
+      >
+        <div 
+          className="card-header"
+          style={{
+            background: "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+            borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+            border: "none",
+          }}
+        >
+          <h4 className="mb-0 text-white">
+            <i className="fas fa-globe-americas me-2"></i>
             Interactive Map
           </h4>
         </div>
         <div className="card-body">
-          <p className="lead mb-4">
+          <p 
+            className="lead mb-4"
+            style={{ color: "var(--color-text-secondary)" }}
+          >
             Use the interactive map below to explore Laguna's attractions and
             plan your journey.
           </p>

@@ -33,6 +33,14 @@ class TourGuide extends Model
     }
 
     /**
+     * Get the spot suggestions for this tour guide
+     */
+    public function spotSuggestions()
+    {
+        return $this->hasMany(SpotSuggestion::class);
+    }
+
+    /**
      * Get the user that owns this tour guide profile
      */
     public function user()

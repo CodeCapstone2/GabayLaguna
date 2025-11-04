@@ -18,6 +18,7 @@ const Sidebar = () => {
     tourist: [
       { to: "/tourist-dashboard", label: "Dashboard", icon: "🏠" },
       { to: "/cities", label: "Explore", icon: "🗺️" },
+      { to: "/itineraries", label: "Itineraries", icon: "📅" },
       { to: "/my-bookings", label: "My Bookings", icon: "📋" },
       { to: "/tourist/reviews", label: "My Reviews", icon: "⭐" },
       { to: "/tourist-profile", label: "Profile", icon: "👤" },

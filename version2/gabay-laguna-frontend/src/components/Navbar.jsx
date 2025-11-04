@@ -321,6 +321,36 @@ const Navbar = () => {
               </div>
             )}
 
+            {/* Navigation Links */}
+            {!isLoggedIn && isPublicPage && (
+              <div className="d-flex gap-3 me-3">
+                <Link
+                  to="/cities"
+                  className="btn btn-outline-light btn-sm px-3 py-2"
+                  style={{
+                    borderRadius: "20px",
+                    borderWidth: "2px",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  🏙️ Cities
+                </Link>
+                <Link
+                  to="/itineraries"
+                  className="btn btn-outline-light btn-sm px-3 py-2"
+                  style={{
+                    borderRadius: "20px",
+                    borderWidth: "2px",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  🗺️ Itineraries
+                </Link>
+              </div>
+            )}
+
             {/* Public Navigation */}
             {!isLoggedIn && isPublicPage && (
               <div className="d-flex gap-2">

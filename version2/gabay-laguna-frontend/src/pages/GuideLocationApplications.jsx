@@ -25,6 +25,31 @@ const GuideLocationApplications = () => {
     }
   }, [navigate]);
 
+  // Fetch all cities from cities API
+  const fetchCities = async () => {
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/cities`, {
+        headers: { Accept: "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        // Handle different response formats
+        let cityData = [];
+        if (data.cities) {
+          cityData = Array.isArray(data.cities) ? data.cities : data.cities.data || [];
+        } else if (data.data) {
+          cityData = data.data;
+        } else {
+          cityData = data;
+        }
+        setCities(cityData);
+      }
+    } catch (err) {
+      console.error("Failed to fetch cities:", err);
+      setError("Failed to load cities");
+    }
+  };
+
   // Fetch all POIs (using your existing API structure)
   const fetchPois = async () => {
     try {
@@ -33,8 +58,6 @@ const GuideLocationApplications = () => {
         headers: { Accept: "application/json" },
       });
       const data = await res.json();
-      console.log("POI API Response:", data);
-      
       if (res.ok) {
         // Handle different response formats
         let poiData = [];
@@ -45,32 +68,11 @@ const GuideLocationApplications = () => {
         } else {
           poiData = data;
         }
-        
-        console.log("Processed POI data:", poiData);
         setPois(poiData);
-
-        // Extract unique cities from POIs
-        const uniqueCities = {};
-        poiData.forEach((poi) => {
-          if (poi.city) {
-            uniqueCities[poi.city.id] = poi.city;
-          } else if (poi.city_id) {
-            // If city object is not included, we'll just store the ID
-            uniqueCities[poi.city_id] = {
-              id: poi.city_id,
-              name: `City ${poi.city_id}`,
-            };
-          }
-        });
-        console.log("Extracted cities:", Object.values(uniqueCities));
-        setCities(Object.values(uniqueCities));
-      } else {
-        console.error("POI API Error:", data);
-        setError("Failed to load locations: " + (data.message || "Unknown error"));
       }
     } catch (err) {
       console.error("Failed to fetch POIs:", err);
-      setError("Failed to load locations: " + err.message);
+      setError("Failed to load POIs");
     } finally {
       setLoading(false);
     }
@@ -82,6 +84,7 @@ const GuideLocationApplications = () => {
       const filtered = pois.filter((poi) => {
         // Handle both object and ID formats
         const poiCityId = poi.city ? poi.city.id : poi.city_id;
+        // Convert both to strings for comparison to handle type mismatches
         return String(poiCityId) === String(form.cityId);
       });
       setFilteredPois(filtered);
@@ -105,18 +108,11 @@ const GuideLocationApplications = () => {
     setSubmitting(true);
     setError("");
 
-    // Validate form - at least one selection is required
-    if (!form.cityId && !form.poiId) {
-      setError("Please select either a city or a specific point of interest.");
-      setSubmitting(false);
-      return;
-    }
-
     try {
       const token = localStorage.getItem("token");
       console.log("Submitting application with:", {
-        city_id: form.cityId || null,
-        poi_id: form.poiId || null,
+        city_id: form.cityId,
+        poi_id: form.poiId,
         notes: form.notes,
       });
 
@@ -141,11 +137,6 @@ const GuideLocationApplications = () => {
       console.log("API Response:", { status: res.status, data });
 
       if (!res.ok) {
-        // Handle validation errors specifically
-        if (data.errors) {
-          const errorMessages = Object.values(data.errors).flat();
-          throw new Error(errorMessages.join(', '));
-        }
         throw new Error(
           data.message || `Failed to submit application (${res.status})`
         );
@@ -184,6 +175,7 @@ const GuideLocationApplications = () => {
 
   useEffect(() => {
     loadApplications();
+    fetchCities();
     fetchPois();
   }, []);
 
@@ -253,8 +245,8 @@ const GuideLocationApplications = () => {
               {loading
                 ? "Loading POIs..."
                 : form.cityId
-                ? `Showing ${filteredPois.length} POI${filteredPois.length !== 1 ? 's' : ''} in selected city`
-                : `Showing all ${pois.length} available POI${pois.length !== 1 ? 's' : ''}`}
+                ? `Showing ${filteredPois.length} POIs in selected city`
+                : `Showing all ${pois.length} available POIs`}
             </small>
           </div>
 
@@ -275,7 +267,7 @@ const GuideLocationApplications = () => {
           <button
             className="btn btn-success"
             disabled={
-              submitting || (!form.cityId && !form.poiId)
+              submitting || (!form.cityId && !form.poiId && !form.notes)
             }
           >
             {submitting ? "Submitting..." : "Submit Application"}

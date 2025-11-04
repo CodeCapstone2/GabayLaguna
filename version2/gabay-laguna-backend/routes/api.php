@@ -13,6 +13,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LocationApplicationController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\ItineraryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,6 +67,13 @@ Route::get('/pois', [PointOfInterestController::class, 'index']);
 Route::get('/pois/{poi}', [PointOfInterestController::class, 'show']);
 Route::get('/cities/{city}/pois', [PointOfInterestController::class, 'getByCity']);
 Route::get('/categories/{category}/pois', [PointOfInterestController::class, 'getByCategory']);
+
+// Itineraries (public)
+Route::get('/itineraries', [ItineraryController::class, 'index']);
+Route::get('/itineraries/{itinerary}', [ItineraryController::class, 'show']);
+Route::get('/itineraries/featured', [ItineraryController::class, 'featured']);
+Route::get('/cities/{city}/itineraries', [ItineraryController::class, 'getByCity']);
+Route::get('/guides/{guide}/itineraries', [ItineraryController::class, 'getByGuide']);
 
 // Tour Guides (public)
 Route::get('/guides', [TourGuideController::class, 'index']);
@@ -133,6 +141,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/guide/location-applications', [LocationApplicationController::class, 'guideApplications']);
         Route::post('/guide/location-applications', [LocationApplicationController::class, 'store']);
 
+        // Spot suggestions routes for guides
+        Route::get('/guide/spot-suggestions', [TourGuideController::class, 'getSpotSuggestions']);
+        Route::post('/guide/spot-suggestions', [TourGuideController::class, 'submitSpotSuggestion']);
+
         // Location tracking routes for guides
         Route::post('/guide/location/update', [LocationController::class, 'updateLocation']);
         Route::get('/guide/active-bookings', [LocationController::class, 'getActiveBookings']);
@@ -165,11 +177,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/admin/pois/{poi}', [PointOfInterestController::class, 'update']);
         Route::delete('/admin/pois/{poi}', [PointOfInterestController::class, 'destroy']);
 
+        Route::post('/admin/itineraries', [ItineraryController::class, 'store']);
+        Route::put('/admin/itineraries/{itinerary}', [ItineraryController::class, 'update']);
+        Route::delete('/admin/itineraries/{itinerary}', [ItineraryController::class, 'destroy']);
+
         Route::get('/admin/location-applications', [LocationApplicationController::class, 'index']);
         Route::get('/admin/location-applications/{id}', [LocationApplicationController::class, 'show']);
         Route::put('/admin/location-applications/{id}/approve', [LocationApplicationController::class, 'approve']);
         Route::put('/admin/location-applications/{id}/reject', [LocationApplicationController::class, 'reject']);
         Route::delete('/admin/location-applications/{id}', [LocationApplicationController::class, 'destroy']);
+
+        // Spot suggestions routes for admin
+        Route::get('/admin/spot-suggestions', [AdminController::class, 'getSpotSuggestions']);
+        Route::put('/admin/spot-suggestions/{id}/{action}', [AdminController::class, 'updateSpotSuggestionStatus']);
 
     });
 });

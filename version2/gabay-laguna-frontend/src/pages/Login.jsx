@@ -9,6 +9,7 @@ import {
   FaLock,
   FaSignInAlt,
 } from "react-icons/fa";
+import "../theme.css";
 
 const Login = () => {
   const [form, setForm] = useState({
@@ -84,11 +85,17 @@ const Login = () => {
         }
       } catch (error) {
         // Enhanced error handling
-        if (error.message === "Network Error") {
+        if (error.message === "Network Error" || error.code === "ERR_NETWORK") {
+          const apiUrl = API_CONFIG.BASE_URL || "Not configured";
           setServerError(
-            "Network Error: Unable to connect to the server. " +
-            "Please check your internet connection and try again."
+            `Network Error: Unable to connect to the server at ${apiUrl}/api/login. ` +
+            "Please check: 1) Backend server is running, 2) Correct API URL is configured, 3) Your internet connection."
           );
+          console.error("Login failed - Network Error:", {
+            apiUrl: `${API_CONFIG.BASE_URL}/api/login`,
+            error: error.message,
+            code: error.code
+          });
         } else {
           const errMsg = error.response?.data?.message || error.message || "Login failed.";
           setServerError(errMsg);
@@ -129,7 +136,14 @@ const Login = () => {
             </div>
 
             {/* Login Form Card */}
-            <div className="card">
+            <div 
+              className="card"
+              style={{
+                borderRadius: "var(--radius-2xl)",
+                backgroundColor: "var(--color-bg)",
+                border: "1px solid var(--color-border)",
+              }}
+            >
               <div className="card-body p-5">
                 {serverError && (
                   <div

@@ -3,38 +3,26 @@
 // Default images for locations - Using diverse, unique real photos
 export const DEFAULT_IMAGES = {
   // Cities - Each city has its own unique image
-  'Pagsanjan': '/assets/StaRosaCity.jpg',
-  'Sta. Rosa': '/assets/StaRosaCity.jpg',
-  'Lumban': '/assets/BinanCity.jpg',
+  'San Pedro': '/assets/SanPedroCity.jpg',
+  'Biñan': '/assets/BinanCity.jpg',
+  'Santa Rosa': '/assets/StaRosaCity.jpg',
+  'Cabuyao': '/assets/CabuyaoCity.jpg',
   'Calamba': '/assets/CalambaCity.jpg',
   'San Pablo': '/assets/SanPabloCity.svg.png',
-  'Los Baños': '/assets/CabuyaoCity.jpg',
-  'Nagcarlan': '/assets/SanPedroCity.jpg',
   
   // POIs - Each POI has its own unique image
-  'Pagsanjan Falls': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
-  'Pagsanjan Arch': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
-  'Enchanted Kingdom': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&h=600&fit=crop',
-  'Sta. Rosa City Hall': 'https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=800&h=600&fit=crop',
-  'Lake Caliraya': 'https://images.unsplash.com/photo-1439066290691-510066268af5?w=800&h=600&fit=crop',
-  'Lumban Church': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
   'Rizal Shrine': '/assets/spots/rizalshrine.jpg',
-  'Calamba Church': '/assets/spots/calambachurch.jpg',
+  'St. John the Baptist Parish Church': '/assets/spots/calambachurch.jpg',
+  'Calamba Jar': '/assets/spots/BangaCalamba.jpg',
   'Mount Makiling': 'https://images.unsplash.com/photo-1519904981063-b0cf448d479e?w=800&h=600&fit=crop',
-  'Seven Lakes of San Pablo': 'https://images.unsplash.com/photo-1439066290691-510066268af5?w=800&h=600&fit=crop',
-  'San Pablo Cathedral': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
-  'UP Los Baños': 'https://images.unsplash.com/photo-1562774053-701939374585?w=800&h=600&fit=crop',
-  'Los Baños Hot Springs': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&h=600&fit=crop',
-  'Liliw Church': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
-  'Paete Woodcarving Shops': 'https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800&h=600&fit=crop',
-  'Majayjay Church': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
-  'Majayjay Falls': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
-  'Pangil River': 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&h=600&fit=crop',
-  'Luisiana Scenic Views': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
-  'Calauan Nature Park': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop',
-  'Nagcarlan Underground Cemetery': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
-  'Nagcarlan Falls': 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop',
-  'Pila Heritage Town': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop'
+  'Calamba Springs': 'https://images.unsplash.com/photo-1561503972-83b7c429a728?w=800&h=600&fit=crop',
+  'Lake Caliraya': '/assets/spots/lake-caliraya.svg',
+  'Biñan Church': 'https://images.unsplash.com/photo-1590422749897-dff2f2e91598?w=800&h=600&fit=crop',
+  'Biñan Plaza': 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=600&fit=crop',
+  'Old Biñan Municipal Hall': 'https://images.unsplash.com/photo-1483695028939-5bb13f8648b0?w=800&h=600&fit=crop',
+  'Biñan River': 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&h=600&fit=crop',
+  'Laguna de Bay': 'https://images.unsplash.com/photo-1439066290691-510066268af5?w=800&h=600&fit=crop',
+  'Biñan Eco-Park': 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop'
 };
 
 // Fallback images
@@ -42,7 +30,7 @@ export const FALLBACK_IMAGES = {
   city: '/assets/default-city.svg',
   poi: '/assets/default-poi.svg',
   user: '/assets/default-user.svg',
-  guide: '/assets/guides/default-guide.svg'
+  guide: '/assets/logo.png'
 };
 
 // Image attribution information

@@ -11,38 +11,36 @@ import API_CONFIG from "../config/api";
 
 const Hero = () => {
   const location = useLocation();
-  const [statistics, setStatistics] = useState({
-    tour_guides: 0,
-    destinations: 0,
-    cities: 0,
-    completed_tours: 0
-  });
-  const [loadingStats, setLoadingStats] = useState(true);
-
-  const fetchStatistics = async () => {
-    try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/statistics`);
-      if (response.ok) {
-        const data = await response.json();
-        setStatistics(data);
-      }
-    } catch (error) {
-      console.error("Error fetching statistics:", error);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
+  const [stats, setStats] = useState({ guides: 0, destinations: 0 });
 
   useEffect(() => {
-    fetchStatistics();
-    
     if (location.hash === "#features") {
       const featureSection = document.getElementById("features");
       if (featureSection) {
         featureSection.scrollIntoView({ behavior: "smooth" });
       }
     }
+    loadStats();
   }, [location]);
+
+  const loadStats = async () => {
+    try {
+      const [guidesRes, poisRes] = await Promise.all([
+        fetch(`${API_CONFIG.BASE_URL}/api/guides`),
+        fetch(`${API_CONFIG.BASE_URL}/api/pois`)
+      ]);
+      
+      const guidesData = await guidesRes.json();
+      const poisData = await poisRes.json();
+      
+      const guidesCount = guidesData.tour_guides?.data?.length || guidesData.tour_guides?.length || 0;
+      const poisCount = poisData.points_of_interest?.data?.length || poisData.points_of_interest?.length || 0;
+      
+      setStats({ guides: guidesCount, destinations: poisCount });
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    }
+  };
 
   return (
     <section
@@ -184,6 +182,18 @@ const Hero = () => {
               {/* Additional Links */}
               <div className="d-flex flex-wrap gap-3">
                 <Link
+                  to="/itineraries"
+                  className="btn btn-outline-info btn-sm px-3 py-2"
+                  style={{
+                    borderRadius: "25px",
+                    borderWidth: "2px",
+                    fontWeight: "600",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  🗺️ Browse Itineraries
+                </Link>
+                <Link
                   to="/signup/guide"
                   className="btn btn-outline-warning btn-sm px-3 py-2"
                   style={{
@@ -217,29 +227,13 @@ const Hero = () => {
               <div className="row g-3 mb-4">
                 <div className="col-6">
                   <div className="bg-white bg-opacity-10 rounded-3 p-3 border border-white border-opacity-25">
-                    {loadingStats ? (
-                      <div className="h4 fw-bold mb-1">
-                        <div className="spinner-border spinner-border-sm" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h4 fw-bold mb-1">{statistics.tour_guides}+</div>
-                    )}
+                    <div className="h4 fw-bold mb-1">{stats.guides}</div>
                     <div className="small text-white-75">Tour Guides</div>
                   </div>
                 </div>
                 <div className="col-6">
                   <div className="bg-white bg-opacity-10 rounded-3 p-3 border border-white border-opacity-25">
-                    {loadingStats ? (
-                      <div className="h4 fw-bold mb-1">
-                        <div className="spinner-border spinner-border-sm" role="status">
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="h4 fw-bold mb-1">{statistics.destinations}+</div>
-                    )}
+                    <div className="h4 fw-bold mb-1">{stats.destinations}</div>
                     <div className="small text-white-75">Destinations</div>
                   </div>
                 </div>

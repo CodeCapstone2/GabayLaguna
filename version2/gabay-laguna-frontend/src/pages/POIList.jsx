@@ -1,109 +1,83 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-
-const customPOIData = {
-  calamba: {
-    historical: [
-      {
-        name: "Rizal Shrine",
-        image: "/assets/spots/rizalshrine.jpg",
-        description:
-          "A beautifully preserved Spanish-era house where Dr. Jose Rizal, the Philippine national hero, was born and raised. The museum displays his memorabilia, family artifacts, and insights into his early life and legacy.",
-        guides: [],
-      },
-      {
-        name: "St. John the Baptist Parish Church",
-        image: "/assets/spots/calambachurch.jpg",
-        description:
-          "One of the oldest churches in Laguna, where Jose Rizal was baptized. The church showcases Spanish colonial architecture and holds deep historical and religious significance for the city.",
-        guides: [],
-      },
-      {
-        name: "Calamba Jar and the Banga",
-        image: "/assets/spots/bangacalamba.jpg",
-        description:
-          'The Calamba Jar, or "Banga," is a giant clay pot symbolizing the city\'s name and heritage. Located at the city plaza, it features the names of Calamba\'s barangays and is a popular cultural landmark and photo spot.',
-        guides: [],
-      },
-    ],
-    natural: [
-      {
-        name: "Mount Makiling",
-        image: "/assets/spots/rizalshrine.jpg",
-        description: "A dormant volcano known for its rich biodiversity.",
-        guides: [],
-      },
-      {
-        name: "Calamba Springs",
-        image: "/assets/spots/calambachurch.jpg",
-        description: "Natural hot springs perfect for relaxation.",
-        guides: [],
-      },
-      {
-        name: "Lake Caliraya",
-        image: "/assets/spots/bangacalamba.jpg",
-        description: "A scenic lake ideal for water sports and picnics.",
-        guides: [],
-      },
-    ],
-  },
-  biñan: {
-    historical: [
-      {
-        name: "Biñan Church",
-        image: "/assets/spots/calambachurch.jpg",
-        description: "A historical church known for its beautiful facade.",
-        guides: [],
-      },
-      {
-        name: "Biñan Plaza",
-        image: "/assets/spots/rizalshrine.jpg",
-        description: "A public plaza with historical significance.",
-        guides: [],
-      },
-      {
-        name: "Old Biñan Municipal Hall",
-        image: "/assets/spots/bangacalamba.jpg",
-        description: "A heritage site that reflects the town's history.",
-        guides: [],
-      },
-    ],
-    natural: [
-      {
-        name: "Biñan River",
-        image: "/assets/spots/calambachurch.jpg",
-        description: "A serene river perfect for kayaking and fishing.",
-        guides: [],
-      },
-      {
-        name: "Laguna de Bay",
-        image: "/assets/spots/rizalshrine.jpg",
-        description: "The largest lake in the Philippines, great for boating.",
-        guides: [],
-      },
-      {
-        name: "Biñan Eco-Park",
-        image: "/assets/spots/bangacalamba.jpg",
-        description: "A park with lush greenery and walking trails.",
-        guides: [],
-      },
-    ],
-  },
-};
-
-const createPOIs = (city, category) => {
-  return customPOIData[city]?.[category] || [];
-};
+import API_CONFIG from "../config/api";
+import { getImageUrl } from "../utils/imageUtils";
 
 const POIList = () => {
   const { city, category } = useParams();
   const navigate = useNavigate();
+  const [spots, setSpots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const spots = createPOIs(city, category);
+  useEffect(() => {
+    loadPOIs();
+  }, [city, category]);
+
+  const loadPOIs = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      
+      // First, get all POIs for the city
+      const cityName = city.charAt(0).toUpperCase() + city.slice(1).replace(/-/g, " ");
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/pois`);
+      const data = await response.json();
+      
+      let poisData = [];
+      if (data.points_of_interest) {
+        poisData = Array.isArray(data.points_of_interest) 
+          ? data.points_of_interest 
+          : data.points_of_interest.data || [];
+      } else if (Array.isArray(data)) {
+        poisData = data;
+      } else {
+        poisData = data.data || [];
+      }
+
+      // Filter by city
+      const cityFiltered = poisData.filter(poi => {
+        const poiCityName = poi.city?.name || "";
+        return poiCityName.toLowerCase() === cityName.toLowerCase();
+      });
+
+      // Filter by category if provided
+      const categoryName = category 
+        ? category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, " ")
+        : null;
+      
+      const categoryFiltered = categoryName 
+        ? cityFiltered.filter(poi => {
+            const poiCategoryName = poi.category?.name || "";
+            return poiCategoryName.toLowerCase().includes(categoryName.toLowerCase());
+          })
+        : cityFiltered;
+
+      setSpots(categoryFiltered);
+    } catch (err) {
+      console.error("Error loading POIs:", err);
+      setError("Failed to load points of interest");
+      setSpots([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleBack = () => {
     navigate(-1);
   };
+
+  if (loading) {
+    return (
+      <div className="container my-5">
+        <div className="text-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container my-5">
@@ -125,18 +99,22 @@ const POIList = () => {
           : "City"}
       </h2>
 
-      {spots.length > 0 ? (
+      {error && (
+        <div className="alert alert-danger">{error}</div>
+      )}
+
+      {!error && spots.length > 0 ? (
         <div className="row">
           {spots.map((spot, index) => (
-            <div className="col-12 mb-5" key={index}>
+            <div className="col-12 mb-5" key={spot.id || index}>
               <div className="card shadow border-0">
                 <div className="row g-0">
                   <div className="col-md-4">
                     <img
-                      src={spot.image}
+                      src={getImageUrl(spot.name, "poi")}
                       className="img-fluid rounded-start h-100"
                       alt={spot.name}
-                      style={{ objectFit: "cover" }}
+                      style={{ objectFit: "cover", height: "100%" }}
                     />
                   </div>
                   <div className="col-md-8">
@@ -144,72 +122,22 @@ const POIList = () => {
                       <h3 className="card-title">{spot.name}</h3>
                       <p className="text-muted">{spot.description}</p>
 
-                      <hr />
-                      <h5 className="mt-4 mb-3">🎒 Available Tour Guides</h5>
+                      {spot.address && (
+                        <p className="text-muted small">
+                          📍 {spot.address}
+                        </p>
+                      )}
 
-                      {spot.guides && spot.guides.length > 0 ? (
-                        <div className="row">
-                          {spot.guides
-                            .sort((a, b) => b.rating - a.rating)
-                            .map((guide, guideIndex) => (
-                              <div className="col-md-6 mb-3" key={guideIndex}>
-                                <div className="card h-100 border-0 shadow-sm">
-                                  <div className="row g-0 h-100">
-                                    <div className="col-4">
-                                      <img
-                                        src={guide.image}
-                                        className="img-fluid rounded-start h-100"
-                                        alt={guide.name}
-                                        style={{ objectFit: "cover" }}
-                                      />
-                                    </div>
-                                    <div className="col-8 d-flex">
-                                      <div className="card-body p-2 d-flex flex-column justify-content-between">
-                                        <div>
-                                          <h6 className="card-title mb-1">
-                                            {guide.name}
-                                          </h6>
-                                          <p className="mb-1">
-                                            ⭐ {guide.rating} / 5
-                                          </p>
-                                          <p className="mb-1">
-                                            💵 PHP {guide.price}
-                                          </p>
-                                          <small className="text-muted">
-                                            {guide.bio}
-                                          </small>
-                                        </div>
-                                        <Link
-                                          to={`/booking/${guideIndex + 1}/${
-                                            index + 1
-                                          }`}
-                                          className="btn btn-sm btn-primary mt-2"
-                                        >
-                                          Book Now
-                                        </Link>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <p className="text-muted mb-3">No tour guides available for this location yet.</p>
-                          <button className="btn btn-outline-primary" disabled>
-                            Check Back Later
-                          </button>
-                        </div>
-                      )}
+                      <hr />
                       
-                      {spot.guides && spot.guides.length > 0 && (
-                        <div className="text-end">
-                          <button className="btn btn-outline-primary mt-3">
-                            View All Guides
-                          </button>
-                        </div>
-                      )}
+                      <div className="text-end">
+                        <Link
+                          to={`/poi/${spot.id}`}
+                          className="btn btn-primary"
+                        >
+                          View Details
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -217,11 +145,11 @@ const POIList = () => {
             </div>
           ))}
         </div>
-      ) : (
+      ) : !error ? (
         <div className="alert alert-warning text-center">
           No spots found for this category.
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

@@ -17,14 +17,10 @@ const GuideAvailabilityWidget = () => {
 
   const testApiConnection = async () => {
     try {
-      console.log("Testing API connection...");
-      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/health`);
-      console.log("API Health Check:", response.data);
+      await axios.get(`${API_CONFIG.BASE_URL}/api/health`);
       
       // Also test the debug endpoint
-      console.log("Testing debug guides endpoint...");
-      const debugResponse = await axios.get(`${API_CONFIG.BASE_URL}/api/debug/guides`);
-      console.log("Debug Guides Response:", debugResponse.data);
+      await axios.get(`${API_CONFIG.BASE_URL}/api/debug/guides`);
     } catch (error) {
       console.error("API Health Check Failed:", error);
     }
@@ -35,10 +31,7 @@ const GuideAvailabilityWidget = () => {
       setLoading(true);
       setError(null);
 
-      console.log("Loading guides from:", `${API_CONFIG.BASE_URL}/api/guides`);
       const response = await axios.get(`${API_CONFIG.BASE_URL}/api/guides`);
-      console.log("Full API Response:", response);
-      console.log("API Response Data:", response.data);
 
       // Ensure guides is always an array
       let guidesData = [];
@@ -50,7 +43,6 @@ const GuideAvailabilityWidget = () => {
       ) {
         // Handle paginated response
         guidesData = response.data.tour_guides.data;
-        console.log("Found guides in tour_guides.data (paginated):", guidesData.length);
       } else if (
         response.data &&
         response.data.tour_guides &&
@@ -58,27 +50,16 @@ const GuideAvailabilityWidget = () => {
       ) {
         // Handle non-paginated response
         guidesData = response.data.tour_guides;
-        console.log("Found guides in tour_guides (non-paginated):", guidesData.length);
       } else if (Array.isArray(response.data)) {
         guidesData = response.data;
-        console.log("Found guides in direct array:", guidesData.length);
       } else {
         console.warn("Unexpected API response format:", response.data);
-        console.warn("Response structure:", {
-          hasData: !!response.data,
-          hasTourGuides: !!(response.data && response.data.tour_guides),
-          hasTourGuidesData: !!(response.data && response.data.tour_guides && response.data.tour_guides.data),
-          isArray: Array.isArray(response.data),
-          isTourGuidesArray: Array.isArray(response.data?.tour_guides)
-        });
         guidesData = [];
       }
 
-      console.log("Final guides data:", guidesData);
       setGuides(guidesData);
     } catch (error) {
       console.error("Error loading guides:", error);
-      console.error("Error details:", error.response?.data);
       setError(`Unable to load guides: ${error.response?.data?.message || error.message}`);
       setGuides([]); // Ensure guides is always an array even on error
     } finally {
@@ -249,7 +230,7 @@ const GuideAvailabilityWidget = () => {
                   <img
                     src={
                       selectedGuide.user?.profile_picture ||
-                      "/assets/guides/default.jpg"
+                      "/assets/logo.png"
                     }
                     alt={selectedGuide.user?.name || selectedGuide.name}
                     className="rounded-circle"

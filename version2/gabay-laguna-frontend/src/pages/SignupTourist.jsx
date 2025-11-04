@@ -13,6 +13,7 @@ import {
   FaArrowLeft,
   FaSignInAlt,
 } from "react-icons/fa";
+import "../theme.css";
 
 const SignupTourist = () => {
   const [form, setForm] = useState({
@@ -151,7 +152,14 @@ const SignupTourist = () => {
             </div>
 
             {/* Signup Form Card */}
-            <div className="card border-0 shadow-lg">
+            <div 
+              className="card border-0 shadow-lg"
+              style={{
+                borderRadius: "var(--radius-2xl)",
+                backgroundColor: "var(--color-bg)",
+                border: "1px solid var(--color-border)",
+              }}
+            >
               <div className="card-body p-4 p-md-5">
                 <form onSubmit={handleSubmit} noValidate>
                   {/* Full Name Field */}

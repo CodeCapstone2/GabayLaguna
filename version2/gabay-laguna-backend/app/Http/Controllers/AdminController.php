@@ -10,6 +10,7 @@ use App\Models\City;
 use App\Models\Category;
 use App\Models\PointOfInterest;
 use App\Models\LocationApplication;
+use App\Models\SpotSuggestion;
 use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -298,6 +299,82 @@ class AdminController extends Controller
                 'start' => $startDate->toDateString(),
                 'end' => $endDate->toDateString(),
             ]
+        ]);
+    }
+
+    /**
+     * Get all spot suggestions for admin review
+     */
+    public function getSpotSuggestions(Request $request)
+    {
+        $query = SpotSuggestion::with(['tourGuide.user', 'city']);
+
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $suggestions = $query->orderBy('created_at', 'desc')->get();
+
+        return response()->json([
+            'suggestions' => $suggestions
+        ]);
+    }
+
+    /**
+     * Approve or reject a spot suggestion
+     */
+    public function updateSpotSuggestionStatus(Request $request, $id, $action)
+    {
+        $validator = Validator::make(['action' => $action], [
+            'action' => 'required|in:approve,reject'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Invalid action. Must be "approve" or "reject"'
+            ], 422);
+        }
+
+        $suggestion = SpotSuggestion::with(['city'])->findOrFail($id);
+
+        if ($action === 'approve') {
+            $suggestion->status = 'approved';
+            
+            // Optionally create a PointOfInterest from the approved suggestion
+            if ($request->create_poi !== false) {
+                try {
+                    PointOfInterest::create([
+                        'name' => $suggestion->name,
+                        'description' => $suggestion->description,
+                        'city_id' => $suggestion->city_id,
+                        'latitude' => $suggestion->latitude ?? $suggestion->city->latitude ?? 0,
+                        'longitude' => $suggestion->longitude ?? $suggestion->city->longitude ?? 0,
+                        'category_id' => $request->category_id ?? 1, // Default category or require it
+                        'address' => $request->address ?? $suggestion->city->name ?? '',
+                        'image' => $request->image ?? 'default.jpg',
+                        'is_active' => true,
+                    ]);
+                } catch (\Exception $e) {
+                    // Log error but don't fail the approval
+                    \Log::error('Error creating POI from suggestion:', [
+                        'suggestion_id' => $suggestion->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        } else {
+            $suggestion->status = 'rejected';
+        }
+
+        if ($request->admin_notes) {
+            $suggestion->admin_notes = $request->admin_notes;
+        }
+
+        $suggestion->save();
+
+        return response()->json([
+            'message' => "Spot suggestion {$action}d successfully",
+            'suggestion' => $suggestion->load(['tourGuide.user', 'city'])
         ]);
     }
 }

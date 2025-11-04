@@ -311,17 +311,30 @@ class PaymentService
     public function createXenditInvoice(Booking $booking): array
     {
         try {
+            // Split name into first name and last name, or use defaults
+            $touristName = $booking->tourist->name ?? 'Tourist';
+            $nameParts = explode(' ', $touristName, 2);
+            $firstName = $nameParts[0] ?? 'Tourist';
+            $lastName = $nameParts[1] ?? 'User';
+            
+            // Build customer data
+            $customer = [
+                'given_names' => $firstName,
+                'surname' => $lastName,
+                'email' => $booking->tourist->email ?? '',
+            ];
+            
+            // Add mobile_number only if phone exists and is not empty
+            if (!empty($booking->tourist->phone)) {
+                $customer['mobile_number'] = (string)$booking->tourist->phone;
+            }
+            
             $payload = [
                 'external_id' => 'booking_' . $booking->id . '_' . time(),
                 'amount' => (int)$booking->total_amount,
                 'description' => "Tour Guide Booking - {$booking->tourGuide->user->name}",
                 'invoice_duration' => 86400, // 24 hours
-                'customer' => [
-                    'given_names' => $booking->tourist->first_name,
-                    'surname' => $booking->tourist->last_name,
-                    'email' => $booking->tourist->email,
-                    'mobile_number' => $booking->tourist->phone_number ?? null,
-                ],
+                'customer' => $customer,
                 'customer_notification_preference' => [
                     'invoice_created' => ['email'],
                     'invoice_reminder' => ['email'],
@@ -407,10 +420,13 @@ class PaymentService
     public function createXenditVirtualAccount(Booking $booking, string $bankCode = 'BCA'): array
     {
         try {
+            // Get tourist name - use the name field directly
+            $touristName = $booking->tourist->name ?? 'Tourist User';
+            
             $payload = [
                 'external_id' => 'booking_' . $booking->id . '_' . time(),
                 'bank_code' => $bankCode,
-                'name' => $booking->tourist->first_name . ' ' . $booking->tourist->last_name,
+                'name' => $touristName,
                 'expected_amount' => (int)$booking->total_amount,
                 'expiration_date' => now()->addDays(1)->toISOString(),
                 'is_closed' => true,

@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 const GuideSpotSuggestions = () => {
   const navigate = useNavigate();
   const [suggestions, setSuggestions] = useState([]);
+  const [cities, setCities] = useState([]);
   const [form, setForm] = useState({
     name: "",
     cityId: "",
@@ -13,6 +14,7 @@ const GuideSpotSuggestions = () => {
     longitude: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("user");
@@ -24,7 +26,33 @@ const GuideSpotSuggestions = () => {
     } catch {
       navigate("/login");
     }
+    fetchCities();
   }, [navigate]);
+
+  const fetchCities = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_CONFIG.BASE_URL}/api/cities`, {
+        headers: { Accept: "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        let cityData = [];
+        if (data.cities) {
+          cityData = Array.isArray(data.cities) ? data.cities : data.cities.data || [];
+        } else if (data.data) {
+          cityData = data.data;
+        } else {
+          cityData = data;
+        }
+        setCities(cityData);
+      }
+    } catch (err) {
+      console.error("Failed to fetch cities:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -115,14 +143,23 @@ const GuideSpotSuggestions = () => {
             />
           </div>
           <div className="col-md-6">
-            <label className="form-label">City ID</label>
-            <input
-              className="form-control"
+            <label className="form-label">City</label>
+            <select
+              className="form-select"
               name="cityId"
               value={form.cityId}
               onChange={handleChange}
               required
-            />
+              disabled={loading || cities.length === 0}
+            >
+              <option value="">Select a city...</option>
+              {cities.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
+            {loading && <small className="text-muted">Loading cities...</small>}
           </div>
           <div className="col-md-12">
             <label className="form-label">Description</label>

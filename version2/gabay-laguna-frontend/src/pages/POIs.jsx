@@ -15,6 +15,9 @@ const POIs = () => {
   const [guideCounts, setGuideCounts] = useState({});
   const [selectedCategory, setSelectedCategory] = useState("");
   const [availableCategories, setAvailableCategories] = useState([]);
+  const [expandedPoiId, setExpandedPoiId] = useState(null);
+  const [expandedPoiGuides, setExpandedPoiGuides] = useState({});
+  const [loadingGuides, setLoadingGuides] = useState({});
 
   useEffect(() => {
     fetchCityPOIs();
@@ -50,272 +53,6 @@ const POIs = () => {
 
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
-  };
-
-  // Fallback POI data for when API fails - matches actual database cities
-  const getFallbackPOIs = (cityId) => {
-    const fallbackData = {
-      1: [ // Pagsanjan
-        {
-          id: 1,
-          name: "Pagsanjan Falls",
-          description: "One of the most famous waterfalls in the Philippines, featuring thrilling boat rides through narrow gorges.",
-          image: "/assets/spots/pagsanjan-falls.jpg",
-          address: "Pagsanjan, Laguna",
-          category: "Waterfalls/Adventure",
-          latitude: 14.273889,
-          longitude: 121.452222
-        },
-        {
-          id: 2,
-          name: "Pagsanjan Arch",
-          description: "A historical arch that serves as the gateway to Pagsanjan town.",
-          image: "/assets/spots/pagsanjan-arch.jpg",
-          address: "Pagsanjan, Laguna",
-          category: "Historical",
-          latitude: 14.273889,
-          longitude: 121.452222
-        }
-      ],
-      2: [ // Sta. Rosa
-        {
-          id: 3,
-          name: "Enchanted Kingdom",
-          description: "A popular theme park with thrilling rides and family attractions.",
-          image: "/assets/spots/enchanted-kingdom.jpg",
-          address: "Sta. Rosa, Laguna",
-          category: "Theme Parks",
-          latitude: 14.327778,
-          longitude: 121.079722
-        },
-        {
-          id: 4,
-          name: "Sta. Rosa City Hall",
-          description: "The modern city hall building showcasing contemporary architecture.",
-          image: "/assets/spots/sta-rosa-cityhall.jpg",
-          address: "Sta. Rosa, Laguna",
-          category: "Historical",
-          latitude: 14.327778,
-          longitude: 121.079722
-        }
-      ],
-      3: [ // Lumban
-        {
-          id: 5,
-          name: "Lake Caliraya",
-          description: "A beautiful man-made lake perfect for water sports and relaxation.",
-          image: "/assets/spots/lake-caliraya.jpg",
-          address: "Lumban, Laguna",
-          category: "Natural",
-          latitude: 14.316667,
-          longitude: 121.533333
-        },
-        {
-          id: 6,
-          name: "Lumban Church",
-          description: "A historical church known for its beautiful architecture.",
-          image: "/assets/spots/lumban-church.jpg",
-          address: "Lumban, Laguna",
-          category: "Historical",
-          latitude: 14.316667,
-          longitude: 121.533333
-        }
-      ],
-      4: [ // Nagcarlan
-        {
-          id: 7,
-          name: "Nagcarlan Underground Cemetery",
-          description: "A unique underground cemetery with historical significance.",
-          image: "/assets/spots/nagcarlan-cemetery.jpg",
-          address: "Nagcarlan, Laguna",
-          category: "Historical",
-          latitude: 14.136111,
-          longitude: 121.416389
-        },
-        {
-          id: 8,
-          name: "Nagcarlan Falls",
-          description: "Beautiful waterfalls perfect for nature lovers and adventure seekers.",
-          image: "/assets/spots/nagcarlan-falls.jpg",
-          address: "Nagcarlan, Laguna",
-          category: "Waterfalls/Adventure",
-          latitude: 14.136111,
-          longitude: 121.416389
-        }
-      ],
-      5: [ // Calamba
-        {
-          id: 9,
-          name: "Rizal Shrine",
-          description: "The birthplace of Dr. Jose Rizal, the Philippine national hero.",
-          image: "/assets/spots/rizal-shrine.jpg",
-          address: "Calamba, Laguna",
-          category: "Historical",
-          latitude: 14.183333,
-          longitude: 121.166667
-        },
-        {
-          id: 10,
-          name: "Calamba Church",
-          description: "St. John the Baptist Parish Church where Rizal was baptized.",
-          image: "/assets/spots/calamba-church.jpg",
-          address: "Calamba, Laguna",
-          category: "Historical",
-          latitude: 14.183333,
-          longitude: 121.166667
-        },
-        {
-          id: 11,
-          name: "Mount Makiling",
-          description: "A dormant volcano known for its rich biodiversity and hiking trails.",
-          image: "/assets/spots/mount-makiling.jpg",
-          address: "Calamba, Laguna",
-          category: "Natural",
-          latitude: 14.183333,
-          longitude: 121.166667
-        }
-      ],
-      6: [ // Pila
-        {
-          id: 12,
-          name: "Pila Heritage Town",
-          description: "A well-preserved Spanish colonial town with historical architecture.",
-          image: "/assets/spots/pila-heritage.jpg",
-          address: "Pila, Laguna",
-          category: "Historical",
-          latitude: 14.233333,
-          longitude: 121.366667
-        }
-      ],
-      7: [ // Los Baños
-        {
-          id: 13,
-          name: "UP Los Baños",
-          description: "The University of the Philippines Los Baños campus with beautiful grounds.",
-          image: "/assets/spots/up-losbanos.jpg",
-          address: "Los Baños, Laguna",
-          category: "Educational",
-          latitude: 14.166667,
-          longitude: 121.233333
-        },
-        {
-          id: 14,
-          name: "Los Baños Hot Springs",
-          description: "Natural hot springs perfect for relaxation and wellness.",
-          image: "/assets/spots/losbanos-hotsprings.jpg",
-          address: "Los Baños, Laguna",
-          category: "Wellness",
-          latitude: 14.166667,
-          longitude: 121.233333
-        }
-      ],
-      8: [ // San Pablo City
-        {
-          id: 15,
-          name: "Seven Lakes of San Pablo",
-          description: "Seven crater lakes formed by volcanic activity, perfect for nature lovers.",
-          image: "/assets/spots/seven-lakes.jpg",
-          address: "San Pablo City, Laguna",
-          category: "Natural",
-          latitude: 14.066667,
-          longitude: 121.333333
-        },
-        {
-          id: 16,
-          name: "San Pablo Cathedral",
-          description: "The main cathedral of San Pablo City, known as the City of Seven Lakes.",
-          image: "/assets/spots/sanpablo-cathedral.jpg",
-          address: "San Pablo City, Laguna",
-          category: "Historical",
-          latitude: 14.066667,
-          longitude: 121.333333
-        }
-      ],
-      9: [ // Liliw
-        {
-          id: 17,
-          name: "Liliw Church",
-          description: "A beautiful church known for its cool climate and footwear industry.",
-          image: "/assets/spots/liliw-church.jpg",
-          address: "Liliw, Laguna",
-          category: "Historical",
-          latitude: 14.133333,
-          longitude: 121.433333
-        }
-      ],
-      10: [ // Paete
-        {
-          id: 18,
-          name: "Paete Woodcarving Shops",
-          description: "The woodcarving capital of the Philippines with skilled artisans.",
-          image: "/assets/spots/paete-woodcarving.jpg",
-          address: "Paete, Laguna",
-          category: "Cultural",
-          latitude: 14.366667,
-          longitude: 121.483333
-        }
-      ],
-      11: [ // Majayjay
-        {
-          id: 19,
-          name: "Majayjay Church",
-          description: "A historical church in a mountainous town with cool climate.",
-          image: "/assets/spots/majayjay-church.jpg",
-          address: "Majayjay, Laguna",
-          category: "Historical",
-          latitude: 14.150000,
-          longitude: 121.466667
-        },
-        {
-          id: 20,
-          name: "Majayjay Falls",
-          description: "Beautiful waterfalls in a mountainous setting.",
-          image: "/assets/spots/majayjay-falls.jpg",
-          address: "Majayjay, Laguna",
-          category: "Waterfalls/Adventure",
-          latitude: 14.150000,
-          longitude: 121.466667
-        }
-      ],
-      12: [ // Pangil
-        {
-          id: 21,
-          name: "Pangil River",
-          description: "Perfect for river adventures and water activities.",
-          image: "/assets/spots/pangil-river.jpg",
-          address: "Pangil, Laguna",
-          category: "Waterfalls/Adventure",
-          latitude: 14.400000,
-          longitude: 121.466667
-        }
-      ],
-      13: [ // Luisiana
-        {
-          id: 22,
-          name: "Luisiana Scenic Views",
-          description: "Mountainous town with scenic views and peaceful environment.",
-          image: "/assets/spots/luisiana-views.jpg",
-          address: "Luisiana, Laguna",
-          category: "Natural",
-          latitude: 14.183333,
-          longitude: 121.516667
-        }
-      ],
-      14: [ // Calauan
-        {
-          id: 23,
-          name: "Calauan Nature Park",
-          description: "Agricultural lands and nature parks near Laguna de Bay.",
-          image: "/assets/spots/calauan-park.jpg",
-          address: "Calauan, Laguna",
-          category: "Natural",
-          latitude: 14.150000,
-          longitude: 121.316667
-        }
-      ]
-    };
-    
-    return fallbackData[cityId] || [];
   };
 
   const fetchCityPOIs = async () => {
@@ -395,12 +132,8 @@ const POIs = () => {
         throw new Error("City guides endpoint failed");
       }
     } catch (error) {
-      console.error("Error fetching city guides, using fallback:", error);
-
-      // Fallback: Use random counts for demo
-      pois.forEach((poi) => {
-        counts[poi.id] = Math.floor(Math.random() * 4) + 1; // 1-4 guides
-      });
+      console.error("Error fetching city guides:", error);
+      // No fake data - just set empty counts
     }
 
     setGuideCounts(counts);
@@ -425,10 +158,58 @@ const POIs = () => {
     }
   };
 
-  const handleViewGuides = (poi) => {
-    navigate(`/poi/${poi.id}/guides`, { state: { poi, city } });
+  const fetchGuidesForPoi = async (poiId) => {
+    setLoadingGuides(prev => ({ ...prev, [poiId]: true }));
+    try {
+      const response = await fetch(
+        `${API_CONFIG.BASE_URL}/api/pois/${poiId}/guides`
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const guidesList = data.guides || [];
+      setExpandedPoiGuides(prev => ({ ...prev, [poiId]: guidesList }));
+    } catch (error) {
+      console.error("Error fetching guides:", error);
+      setExpandedPoiGuides(prev => ({ ...prev, [poiId]: [] }));
+    } finally {
+      setLoadingGuides(prev => ({ ...prev, [poiId]: false }));
+    }
   };
 
+  const handleViewMore = (poi) => {
+    if (expandedPoiId === poi.id) {
+      // Collapse if already expanded
+      setExpandedPoiId(null);
+    } else {
+      // Expand and fetch guides if not already loaded
+      setExpandedPoiId(poi.id);
+      if (!expandedPoiGuides[poi.id]) {
+        fetchGuidesForPoi(poi.id);
+      }
+    }
+  };
+
+  const handleBookNow = (poi, guide) => {
+    navigate(`/booking/${guide.id}/${poi.id}`, {
+      state: {
+        poi: poi,
+        guide: guide,
+      },
+    });
+  };
+
+  const handleViewProfile = (poi, guide) => {
+    navigate(`/guide/${guide.id}/profile`, {
+      state: {
+        poi: poi,
+        guide: guide,
+      },
+    });
+  };
 
   const handleBack = () => {
     navigate(-1);
@@ -466,9 +247,14 @@ const POIs = () => {
         ← Back to Cities
       </button>
 
-      <h2 className="mb-4">
-        Points of Interest in {city.name || `City ${cityId}`}
-      </h2>
+      <div className="mb-4">
+        <h2 className="mb-2">
+          Points of Interest in {city.name || `City ${cityId}`}
+        </h2>
+        <p className="text-muted">
+          Click on any location to view details. Click "View More" to see available tour guides with their Name, Rating, and Price.
+        </p>
+      </div>
 
       {/* Category Filter */}
       {availableCategories.length > 0 && (
@@ -519,13 +305,13 @@ const POIs = () => {
       ) : (
         <div className="row">
           {filteredPois.map((poi) => (
-            <div key={poi.id} className="col-md-6 col-lg-4 mb-4">
-              <div className="card h-100 shadow-sm">
+            <div key={poi.id} className={expandedPoiId === poi.id ? "col-md-12 mb-4" : "col-md-6 col-lg-4 mb-4"}>
+              <div className={`card ${expandedPoiId === poi.id ? 'border-primary' : 'shadow-sm'} h-100`}>
                 <img
                   src={getImageUrl(poi.name, 'poi', poi.image || poi.images?.[0])}
                   className="card-img-top"
                   alt={poi.name}
-                  style={{ height: "200px", objectFit: "cover" }}
+                  style={{ height: expandedPoiId === poi.id ? "300px" : "200px", objectFit: "cover" }}
                   onError={(e) => handleImageError(e, 'poi')}
                 />
                 <div className="card-body d-flex flex-column">
@@ -580,16 +366,96 @@ const POIs = () => {
 
                   <div className="d-grid gap-2">
                     <button
-                      className="btn btn-outline-primary"
-                      onClick={() => handleViewGuides(poi)}
-                      disabled={
-                        !guideCounts[poi.id] || guideCounts[poi.id] === 0
-                      }
+                      className={`btn ${expandedPoiId === poi.id ? 'btn-primary' : 'btn-outline-primary'}`}
+                      onClick={() => handleViewMore(poi)}
+                      disabled={!guideCounts[poi.id] || guideCounts[poi.id] === 0}
+                      title={guideCounts[poi.id] && guideCounts[poi.id] > 0 
+                        ? expandedPoiId === poi.id
+                          ? 'Hide available guides'
+                          : `View ${guideCounts[poi.id]} available tour guide${guideCounts[poi.id] > 1 ? 's' : ''}`
+                        : 'No guides available'}
                     >
-                      <i className="fas fa-users me-2"></i>
-                      View Guides
+                      <i className={`fas ${expandedPoiId === poi.id ? 'fa-eye-slash' : 'fa-users'} me-2`}></i>
+                      {expandedPoiId === poi.id ? 'Hide' : 'View More'}
                     </button>
                   </div>
+
+                  {/* Expanded Guides Section */}
+                  {expandedPoiId === poi.id && (
+                    <div className="mt-4 pt-4 border-top">
+                      <h6 className="mb-3 fw-bold">
+                        <i className="fas fa-users me-2 text-primary"></i>
+                        Available Guides
+                      </h6>
+                      {loadingGuides[poi.id] ? (
+                        <div className="text-center py-3">
+                          <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                          </div>
+                        </div>
+                      ) : expandedPoiGuides[poi.id] && expandedPoiGuides[poi.id].length > 0 ? (
+                        <div className="row">
+                          {expandedPoiGuides[poi.id].map((guide) => (
+                            <div key={guide.id} className="col-md-6 mb-3">
+                              <div className="card shadow-sm h-100">
+                                <div className="card-body">
+                                  <div className="d-flex align-items-start mb-3">
+                                    <img
+                                      src={guide.user?.profile_picture || "/assets/logo.png"}
+                                      className="rounded-circle me-3"
+                                      alt={guide.user?.name}
+                                      style={{ width: "60px", height: "60px", objectFit: "cover" }}
+                                      onError={(e) => {
+                                        e.target.src = "/assets/logo.png";
+                                      }}
+                                    />
+                                    <div className="flex-grow-1">
+                                      <h6 className="mb-1 fw-bold">{guide.user?.name || 'Tour Guide'}</h6>
+                                      <div className="mb-2">
+                                        <span className="badge bg-warning text-dark me-2">
+                                          ⭐ {guide.rating ? parseFloat(guide.rating).toFixed(1) : '0.0'} / 5.0
+                                        </span>
+                                        <span className="badge bg-success">
+                                          ₱{guide.hourly_rate || 0}/hr
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {guide.bio && (
+                                    <p className="card-text text-muted small mb-3">
+                                      {guide.bio.length > 80 ? guide.bio.substring(0, 80) + '...' : guide.bio}
+                                    </p>
+                                  )}
+
+                                  <div className="d-grid gap-2">
+                                    <button
+                                      className="btn btn-success btn-sm"
+                                      onClick={() => handleBookNow(poi, guide)}
+                                    >
+                                      <i className="fas fa-calendar-check me-2"></i>
+                                      Book Now
+                                    </button>
+                                    <button
+                                      className="btn btn-outline-primary btn-sm"
+                                      onClick={() => handleViewProfile(poi, guide)}
+                                    >
+                                      <i className="fas fa-user me-2"></i>
+                                      View Profile
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="alert alert-info">
+                          No guides available for this location.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

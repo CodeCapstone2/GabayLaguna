@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
 			CategoriesSeeder::class,
 			CitiesSeeder::class,
 			PointsOfInterestSeeder::class,
+			ItinerarySeeder::class,
 		]);
 
 		// Ensure a default admin exists for initial access

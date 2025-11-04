@@ -365,19 +365,57 @@ class NotificationService
     protected function sendEmail(string $to, string $subject, string $template, array $data): bool
     {
         try {
+            // Check if email notifications are enabled
+            if (!config('gabay-laguna.notifications.email.enabled', true)) {
+                Log::info('Email notifications are disabled', [
+                    'to' => $to,
+                    'subject' => $subject
+                ]);
+                return false;
+            }
+
+            // Check if mail driver is configured (not just 'log' for production)
+            $mailDriver = config('mail.default', 'log');
+            if ($mailDriver === 'log') {
+                Log::warning('Mail driver is set to "log" - emails will not be sent, only logged', [
+                    'to' => $to,
+                    'subject' => $subject,
+                    'driver' => $mailDriver
+                ]);
+            }
+
+            // Validate email address
+            if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+                Log::error('Invalid email address provided', [
+                    'to' => $to,
+                    'subject' => $subject
+                ]);
+                return false;
+            }
+
+            // Send the email
+            // Mail::send() doesn't return false on failure, it throws exceptions
+            // So if we reach here without exception, the email was accepted for sending
             Mail::send($template, $data, function ($message) use ($to, $subject) {
                 $message->to($to)
                         ->subject($subject)
                         ->from(config('mail.from.address'), config('mail.from.name'));
             });
 
+            Log::info('Email sent successfully', [
+                'to' => $to,
+                'subject' => $subject,
+                'driver' => $mailDriver,
+                'template' => $template
+            ]);
             return true;
 
         } catch (\Exception $e) {
             Log::error('Email sending failed', [
                 'to' => $to,
                 'subject' => $subject,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return false;
@@ -440,6 +478,108 @@ class NotificationService
         } catch (\Exception $e) {
             Log::error('Twilio SMS error', [
                 'to' => $to,
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Send booking confirmation to tourist only
+     */
+    public function sendBookingConfirmationToTourist(Booking $booking): bool
+    {
+        try {
+            $tourist = $booking->tourist;
+            $guide = $booking->tourGuide->user;
+            
+            // Send email to tourist
+            return $this->sendEmail(
+                $tourist->email,
+                'Booking Confirmation - Gabay Laguna',
+                'emails.booking.confirmation',
+                [
+                    'booking' => $booking,
+                    'tourist' => $tourist,
+                    'guide' => $guide,
+                    'poi' => $booking->pointOfInterest
+                ]
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Booking confirmation to tourist failed', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Send itinerary details to tourist
+     */
+    public function sendItineraryDetails(Booking $booking): bool
+    {
+        try {
+            $tourist = $booking->tourist;
+            $guide = $booking->tourGuide->user;
+            
+            if (!$booking->itinerary) {
+                Log::warning('Attempted to send itinerary details for booking without itinerary', [
+                    'booking_id' => $booking->id
+                ]);
+                return false;
+            }
+
+            return $this->sendEmail(
+                $tourist->email,
+                'Tour Itinerary Details - Gabay Laguna',
+                'emails.booking.itinerary',
+                [
+                    'booking' => $booking,
+                    'tourist' => $tourist,
+                    'guide' => $guide,
+                    'itinerary' => $booking->itinerary,
+                    'poi' => $booking->pointOfInterest
+                ]
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Send itinerary details failed', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Request review from tourist
+     */
+    public function requestReview(Booking $booking): bool
+    {
+        try {
+            $tourist = $booking->tourist;
+            $guide = $booking->tourGuide->user;
+
+            return $this->sendEmail(
+                $tourist->email,
+                'Share Your Experience - Gabay Laguna',
+                'emails.booking.review-request',
+                [
+                    'booking' => $booking,
+                    'tourist' => $tourist,
+                    'guide' => $guide,
+                    'poi' => $booking->pointOfInterest
+                ]
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Review request failed', [
+                'booking_id' => $booking->id,
                 'error' => $e->getMessage()
             ]);
 

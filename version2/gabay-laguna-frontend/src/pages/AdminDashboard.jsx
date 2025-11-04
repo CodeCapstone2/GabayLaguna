@@ -26,14 +26,29 @@ const AdminDashboard = () => {
     const userData = localStorage.getItem("user");
     if (userData) {
       try {
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        
+        // Check if user is admin
+        const userType = parsedUser?.user_type || parsedUser?.role;
+        if (userType !== "admin") {
+          // Redirect non-admin users to their appropriate dashboard
+          if (userType === "tourist") {
+            navigate("/tourist-dashboard", { replace: true });
+          } else if (userType === "guide") {
+            navigate("/guide-dashboard", { replace: true });
+          } else {
+            navigate("/login", { replace: true });
+          }
+          return;
+        }
       } catch (error) {
         console.error("Error parsing user data:", error);
-        navigate("/login");
+        navigate("/login", { replace: true });
         return;
       }
     } else {
-      navigate("/login");
+      navigate("/login", { replace: true });
       return;
     }
 
@@ -157,22 +172,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                👥
-              </div>
               <h3
                 style={{
                   color: "var(--color-primary)",
@@ -215,22 +214,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-success)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                🧭
-              </div>
               <h3
                 style={{
                   color: "var(--color-success)",
@@ -273,22 +256,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-info)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                📋
-              </div>
               <h3
                 style={{
                   color: "var(--color-info)",
@@ -331,22 +298,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-warning)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                ⏳
-              </div>
               <h3
                 style={{
                   color: "var(--color-warning)",
@@ -393,22 +344,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-info)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                🧳
-              </div>
               <h3
                 style={{
                   color: "var(--color-info)",
@@ -451,22 +386,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-success)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                💰
-              </div>
               <h3
                 style={{
                   color: "var(--color-success)",
@@ -509,22 +428,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-primary)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                🏙️
-              </div>
               <h3
                 style={{
                   color: "var(--color-primary)",
@@ -567,22 +470,6 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4">
-              <div
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  borderRadius: "50%",
-                  backgroundColor: "var(--color-warning)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  margin: "0 auto 1rem",
-                  color: "white",
-                  fontSize: "1.5rem",
-                }}
-              >
-                📍
-              </div>
               <h3
                 style={{
                   color: "var(--color-warning)",
@@ -630,35 +517,17 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4 d-flex flex-column">
-              <div className="d-flex align-items-center mb-3">
-                <div
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    borderRadius: "50%",
-                    backgroundColor: "var(--color-success)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: "1rem",
-                    color: "white",
-                    fontSize: "1.5rem",
-                  }}
-                >
-                  👥
-                </div>
-                <h5
-                  className="mb-0"
-                  style={{
-                    color: "var(--color-success)",
-                    fontFamily: "var(--font-family-heading)",
-                    fontWeight: "600",
-                    fontSize: "1.3rem",
-                  }}
-                >
-                  User Management
-                </h5>
-              </div>
+              <h5
+                className="mb-3"
+                style={{
+                  color: "var(--color-success)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                  fontSize: "1.3rem",
+                }}
+              >
+                User Management
+              </h5>
               <p
                 style={{
                   color: "var(--color-text-secondary)",
@@ -718,35 +587,17 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4 d-flex flex-column">
-              <div className="d-flex align-items-center mb-3">
-                <div
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    borderRadius: "50%",
-                    backgroundColor: "var(--color-primary)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: "1rem",
-                    color: "white",
-                    fontSize: "1.5rem",
-                  }}
-                >
-                  📊
-                </div>
-                <h5
-                  className="mb-0"
-                  style={{
-                    color: "var(--color-primary)",
-                    fontFamily: "var(--font-family-heading)",
-                    fontWeight: "600",
-                    fontSize: "1.3rem",
-                  }}
-                >
-                  Reports & Analytics
-                </h5>
-              </div>
+              <h5
+                className="mb-3"
+                style={{
+                  color: "var(--color-primary)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                  fontSize: "1.3rem",
+                }}
+              >
+                Reports & Analytics
+              </h5>
               <p
                 style={{
                   color: "var(--color-text-secondary)",
@@ -806,35 +657,17 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4 d-flex flex-column">
-              <div className="d-flex align-items-center mb-3">
-                <div
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    borderRadius: "50%",
-                    backgroundColor: "var(--color-danger)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: "1rem",
-                    color: "white",
-                    fontSize: "1.5rem",
-                  }}
-                >
-                  📍
-                </div>
-                <h5
-                  className="mb-0"
-                  style={{
-                    color: "var(--color-danger)",
-                    fontFamily: "var(--font-family-heading)",
-                    fontWeight: "600",
-                    fontSize: "1.3rem",
-                  }}
-                >
-                  Location Applications
-                </h5>
-              </div>
+              <h5
+                className="mb-3"
+                style={{
+                  color: "var(--color-danger)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                  fontSize: "1.3rem",
+                }}
+              >
+                Location Applications
+              </h5>
               <p
                 style={{
                   color: "var(--color-text-secondary)",
@@ -894,35 +727,17 @@ const AdminDashboard = () => {
             }}
           >
             <div className="card-body p-4 d-flex flex-column">
-              <div className="d-flex align-items-center mb-3">
-                <div
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    borderRadius: "50%",
-                    backgroundColor: "var(--color-warning)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginRight: "1rem",
-                    color: "white",
-                    fontSize: "1.5rem",
-                  }}
-                >
-                  🗺️
-                </div>
-                <h5
-                  className="mb-0"
-                  style={{
-                    color: "var(--color-warning)",
-                    fontFamily: "var(--font-family-heading)",
-                    fontWeight: "600",
-                    fontSize: "1.3rem",
-                  }}
-                >
-                  Spot Suggestions
-                </h5>
-              </div>
+              <h5
+                className="mb-3"
+                style={{
+                  color: "var(--color-warning)",
+                  fontFamily: "var(--font-family-heading)",
+                  fontWeight: "600",
+                  fontSize: "1.3rem",
+                }}
+              >
+                Spot Suggestions
+              </h5>
               <p
                 style={{
                   color: "var(--color-text-secondary)",

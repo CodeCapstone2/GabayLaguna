@@ -18,54 +18,117 @@ class NotificationService
     public function sendBookingConfirmation(Booking $booking): bool
     {
         try {
+            // Ensure relationships are loaded
+            if (!$booking->relationLoaded('tourist')) {
+                $booking->load('tourist');
+            }
+            if (!$booking->relationLoaded('tourGuide')) {
+                $booking->load('tourGuide.user');
+            }
+            if (!$booking->relationLoaded('pointOfInterest')) {
+                $booking->load('pointOfInterest');
+            }
+
             $tourist = $booking->tourist;
             $guide = $booking->tourGuide->user;
-            
+            $poi = $booking->pointOfInterest;
+
+            // Validate required data
+            if (!$tourist || !$tourist->email) {
+                Log::error('Booking confirmation failed: Tourist or email missing', [
+                    'booking_id' => $booking->id,
+                    'tourist_id' => $booking->tourist_id,
+                ]);
+                return false;
+            }
+
+            if (!$guide || !$guide->email) {
+                Log::error('Booking confirmation failed: Guide or email missing', [
+                    'booking_id' => $booking->id,
+                    'tour_guide_id' => $booking->tour_guide_id,
+                ]);
+                return false;
+            }
+
+            $touristEmailSent = false;
+            $guideEmailSent = false;
+
             // Send email to tourist
-            $this->sendEmail(
-                $tourist->email,
-                'Booking Confirmation - Gabay Laguna',
-                'emails.booking.confirmation',
-                [
-                    'booking' => $booking,
-                    'tourist' => $tourist,
-                    'guide' => $guide,
-                    'poi' => $booking->pointOfInterest
-                ]
-            );
+            try {
+                $touristEmailSent = $this->sendEmail(
+                    $tourist->email,
+                    'Booking Confirmation - Gabay Laguna',
+                    'emails.booking.confirmation',
+                    [
+                        'booking' => $booking,
+                        'tourist' => $tourist,
+                        'guide' => $guide,
+                        'poi' => $poi
+                    ]
+                );
+            } catch (\Exception $e) {
+                Log::error('Failed to send booking confirmation to tourist', [
+                    'booking_id' => $booking->id,
+                    'tourist_email' => $tourist->email,
+                    'error' => $e->getMessage()
+                ]);
+            }
 
             // Send email to guide
-            $this->sendEmail(
-                $guide->email,
-                'New Booking Request - Gabay Laguna',
-                'emails.booking.new-request',
-                [
-                    'booking' => $booking,
-                    'tourist' => $tourist,
-                    'guide' => $guide,
-                    'poi' => $booking->pointOfInterest
-                ]
-            );
+            try {
+                $guideEmailSent = $this->sendEmail(
+                    $guide->email,
+                    'New Booking Request - Gabay Laguna',
+                    'emails.booking.new-request',
+                    [
+                        'booking' => $booking,
+                        'tourist' => $tourist,
+                        'guide' => $guide,
+                        'poi' => $poi
+                    ]
+                );
+            } catch (\Exception $e) {
+                Log::error('Failed to send booking request notification to guide', [
+                    'booking_id' => $booking->id,
+                    'guide_email' => $guide->email,
+                    'error' => $e->getMessage()
+                ]);
+            }
 
             // Send SMS notifications if configured
             if (config('services.sms.enabled', false)) {
-                $this->sendSMS(
-                    $tourist->phone,
-                    "Your booking with {$guide->name} for {$booking->pointOfInterest->name} on {$booking->tour_date} has been confirmed. Booking ID: {$booking->id}"
-                );
+                try {
+                    if ($tourist->phone) {
+                        $poiName = $poi ? $poi->name : 'the location';
+                        $this->sendSMS(
+                            $tourist->phone,
+                            "Your booking with {$guide->name} for {$poiName} on {$booking->tour_date} has been confirmed. Booking ID: {$booking->id}"
+                        );
+                    }
 
-                $this->sendSMS(
-                    $guide->phone,
-                    "You have a new booking request from {$tourist->name} for {$booking->pointOfInterest->name} on {$booking->tour_date}. Please check your dashboard."
-                );
+                    if ($guide->phone) {
+                        $poiName = $poi ? $poi->name : 'the location';
+                        $this->sendSMS(
+                            $guide->phone,
+                            "You have a new booking request from {$tourist->name} for {$poiName} on {$booking->tour_date}. Please check your dashboard."
+                        );
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('SMS notifications failed', [
+                        'booking_id' => $booking->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
             }
 
-            return true;
+            // Return true if at least one email was sent successfully
+            return $touristEmailSent || $guideEmailSent;
 
         } catch (\Exception $e) {
             Log::error('Booking confirmation notification failed', [
                 'booking_id' => $booking->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return false;
@@ -78,39 +141,180 @@ class NotificationService
     public function sendBookingStatusUpdate(Booking $booking, string $oldStatus, string $newStatus): bool
     {
         try {
+            // Ensure relationships are loaded
+            if (!$booking->relationLoaded('tourist')) {
+                $booking->load('tourist');
+            }
+            if (!$booking->relationLoaded('tourGuide')) {
+                $booking->load('tourGuide.user');
+            }
+            if (!$booking->relationLoaded('pointOfInterest')) {
+                $booking->load('pointOfInterest');
+            }
+            if (!$booking->relationLoaded('payment')) {
+                $booking->load('payment');
+            }
+
             $tourist = $booking->tourist;
             $guide = $booking->tourGuide->user;
+            
+            // Validate required data
+            if (!$tourist || !$tourist->email) {
+                Log::error('Booking status update failed: Tourist or email missing', [
+                    'booking_id' => $booking->id,
+                    'tourist_id' => $booking->tourist_id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                ]);
+                return false;
+            }
+
+            if (!$guide || !$guide->email) {
+                Log::error('Booking status update failed: Guide or email missing', [
+                    'booking_id' => $booking->id,
+                    'tour_guide_id' => $booking->tour_guide_id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                ]);
+                return false;
+            }
             
             $statusMessages = [
                 'confirmed' => 'Your booking has been confirmed by the tour guide.',
                 'cancelled' => 'Your booking has been cancelled.',
+                'rejected' => 'Your booking request has been rejected by the tour guide.',
                 'completed' => 'Your tour has been completed. Please leave a review!',
                 'no_show' => 'The tour guide marked you as a no-show.',
             ];
 
             $message = $statusMessages[$newStatus] ?? "Your booking status has been updated to {$newStatus}.";
 
+            // Determine email subjects based on status
+            $touristSubjects = [
+                'confirmed' => '✅ Booking Confirmed - Gabay Laguna',
+                'cancelled' => '❌ Booking Cancelled - Gabay Laguna',
+                'rejected' => '❌ Booking Request Rejected - Gabay Laguna',
+                'completed' => '🎉 Tour Completed - Gabay Laguna',
+            ];
+
+            $touristSubject = $touristSubjects[$newStatus] ?? 'Booking Status Update - Gabay Laguna';
+
+            $touristEmailSent = false;
+            $guideEmailSent = false;
+
             // Send email to tourist
-            $this->sendEmail(
-                $tourist->email,
-                'Booking Status Update - Gabay Laguna',
-                'emails.booking.status-update',
-                [
-                    'booking' => $booking,
-                    'tourist' => $tourist,
-                    'guide' => $guide,
-                    'oldStatus' => $oldStatus,
-                    'newStatus' => $newStatus,
-                    'message' => $message
-                ]
-            );
+            try {
+                $touristEmailSent = $this->sendEmail(
+                    $tourist->email,
+                    $touristSubject,
+                    'emails.booking.status-update',
+                    [
+                        'booking' => $booking->load(['tourGuide.user', 'pointOfInterest', 'payment']),
+                        'tourist' => $tourist,
+                        'guide' => $guide,
+                        'oldStatus' => $oldStatus,
+                        'newStatus' => $newStatus,
+                        'statusMessage' => $message,
+                        'recipient' => 'tourist'
+                    ]
+                );
+                
+                if ($touristEmailSent) {
+                    Log::info('Booking status update email sent to tourist', [
+                        'booking_id' => $booking->id,
+                        'tourist_email' => $tourist->email,
+                        'status' => $newStatus,
+                    ]);
+                } else {
+                    Log::warning('Booking status update email failed to send to tourist', [
+                        'booking_id' => $booking->id,
+                        'tourist_email' => $tourist->email,
+                        'status' => $newStatus,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Exception sending booking status update to tourist', [
+                    'booking_id' => $booking->id,
+                    'tourist_email' => $tourist->email,
+                    'status' => $newStatus,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Send email to guide for all status updates
+            $guideSubjects = [
+                'confirmed' => '✅ Booking Confirmed - Gabay Laguna',
+                'cancelled' => '❌ Booking Cancelled - Gabay Laguna',
+                'rejected' => '❌ Booking Rejected - Gabay Laguna',
+                'completed' => '🎉 Tour Completed - Gabay Laguna',
+            ];
+
+            $guideSubject = $guideSubjects[$newStatus] ?? 'Booking Status Update - Gabay Laguna';
+
+            $guideMessages = [
+                'confirmed' => "You have confirmed the booking request from {$tourist->name}. The tourist has been notified.",
+                'rejected' => "You have rejected the booking request from {$tourist->name}. The tourist has been notified.",
+                'cancelled' => "The booking from {$tourist->name} has been cancelled. " . 
+                    ($booking->payment && $booking->payment->status === 'completed' 
+                        ? 'If cancelled within 24 hours, a refund may have been processed.' 
+                        : ''),
+                'completed' => "The tour with {$tourist->name} has been marked as completed.",
+            ];
+
+            $guideMessage = $guideMessages[$newStatus] ?? "Booking status has been updated to {$newStatus}.";
+            
+            try {
+                $guideEmailSent = $this->sendEmail(
+                    $guide->email,
+                    $guideSubject,
+                    'emails.booking.status-update',
+                    [
+                        'booking' => $booking->load(['tourist', 'pointOfInterest', 'payment']),
+                        'tourist' => $tourist,
+                        'guide' => $guide,
+                        'oldStatus' => $oldStatus,
+                        'newStatus' => $newStatus,
+                        'statusMessage' => $guideMessage,
+                        'recipient' => 'guide'
+                    ]
+                );
+                
+                if ($guideEmailSent) {
+                    Log::info('Booking status update email sent to guide', [
+                        'booking_id' => $booking->id,
+                        'guide_email' => $guide->email,
+                        'status' => $newStatus,
+                    ]);
+                } else {
+                    Log::warning('Booking status update email failed to send to guide', [
+                        'booking_id' => $booking->id,
+                        'guide_email' => $guide->email,
+                        'status' => $newStatus,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Exception sending booking status update to guide', [
+                    'booking_id' => $booking->id,
+                    'guide_email' => $guide->email,
+                    'status' => $newStatus,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // Send SMS if configured
             if (config('services.sms.enabled', false)) {
-                $this->sendSMS($tourist->phone, $message);
+                try {
+                    $this->sendSMS($tourist->phone, $message);
+                } catch (\Exception $e) {
+                    Log::warning('SMS notification failed for booking status update', [
+                        'booking_id' => $booking->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
-            return true;
+            // Return true if at least one email was sent successfully
+            return $touristEmailSent || $guideEmailSent;
 
         } catch (\Exception $e) {
             Log::error('Booking status update notification failed', [
@@ -130,9 +334,45 @@ class NotificationService
     public function sendPaymentConfirmation(Payment $payment): bool
     {
         try {
+            // Ensure relationships are loaded
+            if (!$payment->relationLoaded('booking')) {
+                $payment->load('booking');
+            }
+            
             $booking = $payment->booking;
+            
+            // Load booking relationships
+            if (!$booking->relationLoaded('tourist')) {
+                $booking->load('tourist');
+            }
+            if (!$booking->relationLoaded('tourGuide')) {
+                $booking->load('tourGuide.user');
+            }
+            if (!$booking->relationLoaded('pointOfInterest')) {
+                $booking->load('pointOfInterest');
+            }
+
             $tourist = $booking->tourist;
             $guide = $booking->tourGuide->user;
+            
+            // Validate required data
+            if (!$tourist || !$tourist->email) {
+                Log::error('Payment confirmation failed: Tourist or email missing', [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $booking->id,
+                    'tourist_id' => $booking->tourist_id,
+                ]);
+                return false;
+            }
+
+            if (!$guide || !$guide->email) {
+                Log::error('Payment confirmation failed: Guide or email missing', [
+                    'payment_id' => $payment->id,
+                    'booking_id' => $booking->id,
+                    'tour_guide_id' => $booking->tour_guide_id,
+                ]);
+                return false;
+            }
 
             // Send email to tourist
             $this->sendEmail(
@@ -177,6 +417,72 @@ class NotificationService
 
         } catch (\Exception $e) {
             Log::error('Payment confirmation notification failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Send refund notification
+     */
+    public function sendRefundNotification(Payment $payment, array $refundResult): bool
+    {
+        try {
+            $booking = $payment->booking;
+            $tourist = $booking->tourist;
+            $guide = $booking->tourGuide->user;
+
+            // Send email to tourist
+            $this->sendEmail(
+                $tourist->email,
+                'Refund Processed - Gabay Laguna',
+                'emails.payment.refund',
+                [
+                    'payment' => $payment,
+                    'booking' => $booking,
+                    'tourist' => $tourist,
+                    'guide' => $guide,
+                    'refund_result' => $refundResult,
+                    'refund_amount' => $payment->amount,
+                    'refund_id' => $refundResult['refund_id'] ?? null,
+                ]
+            );
+
+            // Send email to guide
+            $this->sendEmail(
+                $guide->email,
+                'Booking Cancelled - Refund Issued - Gabay Laguna',
+                'emails.payment.refund-guide',
+                [
+                    'payment' => $payment,
+                    'booking' => $booking,
+                    'tourist' => $tourist,
+                    'guide' => $guide,
+                    'refund_result' => $refundResult,
+                    'refund_amount' => $payment->amount,
+                ]
+            );
+
+            // Send SMS if configured
+            if (config('services.sms.enabled', false)) {
+                $this->sendSMS(
+                    $tourist->phone,
+                    "Refund of PHP {$payment->amount} for booking #{$booking->id} has been processed. The amount will be credited back to your account within 5-7 business days."
+                );
+
+                $this->sendSMS(
+                    $guide->phone,
+                    "Booking #{$booking->id} from {$tourist->name} has been cancelled and a refund of PHP {$payment->amount} has been issued."
+                );
+            }
+
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Refund notification failed', [
                 'payment_id' => $payment->id,
                 'error' => $e->getMessage()
             ]);
@@ -376,13 +682,30 @@ class NotificationService
 
             // Check if mail driver is configured (not just 'log' for production)
             $mailDriver = config('mail.default', 'log');
+            $mailHost = config('mail.mailers.smtp.host', 'not configured');
+            $mailUsername = config('mail.mailers.smtp.username', 'not configured');
+            $mailFrom = config('mail.from.address', 'not configured');
+
             if ($mailDriver === 'log') {
-                Log::warning('Mail driver is set to "log" - emails will not be sent, only logged', [
+                Log::warning('Mail driver is set to "log" - emails will not be sent, only logged to storage/logs/laravel.log', [
                     'to' => $to,
                     'subject' => $subject,
-                    'driver' => $mailDriver
+                    'driver' => $mailDriver,
+                    'note' => 'Change MAIL_MAILER=smtp in .env and run php artisan config:clear'
                 ]);
+                return false;
             }
+
+            // Log mail configuration for debugging (without sensitive data)
+            Log::debug('Sending email', [
+                'to' => $to,
+                'subject' => $subject,
+                'driver' => $mailDriver,
+                'host' => $mailHost,
+                'from' => $mailFrom,
+                'template' => $template,
+                'username_configured' => !empty($mailUsername) && $mailUsername !== 'not configured'
+            ]);
 
             // Validate email address
             if (empty($to) || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -393,20 +716,30 @@ class NotificationService
                 return false;
             }
 
+            // Validate from address
+            if (empty($mailFrom) || $mailFrom === 'not configured' || !filter_var($mailFrom, FILTER_VALIDATE_EMAIL)) {
+                Log::error('Invalid or missing MAIL_FROM_ADDRESS in configuration', [
+                    'from' => $mailFrom,
+                    'to' => $to,
+                    'subject' => $subject,
+                    'note' => 'Set MAIL_FROM_ADDRESS in .env file'
+                ]);
+                return false;
+            }
+
             // Send the email
-            // Mail::send() doesn't return false on failure, it throws exceptions
-            // So if we reach here without exception, the email was accepted for sending
-            Mail::send($template, $data, function ($message) use ($to, $subject) {
+            Mail::send($template, $data, function ($message) use ($to, $subject, $mailFrom) {
                 $message->to($to)
                         ->subject($subject)
-                        ->from(config('mail.from.address'), config('mail.from.name'));
+                        ->from($mailFrom, config('mail.from.name', 'Gabay Laguna'));
             });
 
             Log::info('Email sent successfully', [
                 'to' => $to,
                 'subject' => $subject,
                 'driver' => $mailDriver,
-                'template' => $template
+                'template' => $template,
+                'from' => $mailFrom
             ]);
             return true;
 
@@ -415,6 +748,9 @@ class NotificationService
                 'to' => $to,
                 'subject' => $subject,
                 'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'mail_driver' => config('mail.default', 'not set'),
+                'mail_host' => config('mail.mailers.smtp.host', 'not set'),
                 'trace' => $e->getTraceAsString()
             ]);
 

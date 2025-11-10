@@ -62,6 +62,16 @@ class PaymentController extends Controller
             'paid_at' => now(),
         ]);
 
+        // Send payment confirmation notifications
+        try {
+            app(\App\Services\NotificationService::class)->sendPaymentConfirmation($payment);
+        } catch (\Exception $e) {
+            \Log::warning('Payment processed but notification failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         // Leave booking as pending until guide confirms.
 
         return response()->json([
@@ -115,6 +125,16 @@ class PaymentController extends Controller
             'status' => 'completed',
             'paid_at' => now(),
         ]);
+
+        // Send payment confirmation notifications
+        try {
+            app(\App\Services\NotificationService::class)->sendPaymentConfirmation($payment);
+        } catch (\Exception $e) {
+            \Log::warning('Payment processed but notification failed', [
+                'payment_id' => $payment->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // Leave booking as pending until guide confirms.
 

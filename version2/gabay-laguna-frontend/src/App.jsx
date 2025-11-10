@@ -33,6 +33,8 @@ import PublicGuideProfile from "./pages/PublicGuideProfile";
 import Itineraries from "./pages/Itineraries";
 import ItineraryDetail from "./pages/ItineraryDetail";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Sidebar from "./components/Sidebar";
 import "./App.css";
 
@@ -42,6 +44,8 @@ const App = () => {
     "/login",
     "/signup/tourist",
     "/signup/guide",
+    "/forgot-password",
+    "/reset-password",
   ];
   const isPublic = publicPaths.includes(location.pathname);
   const isHomePage = location.pathname === "/";
@@ -65,6 +69,8 @@ const App = () => {
                     element={<PublicLandingPage />}
                   />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/signup/tourist" element={<SignupTourist />} />
                   <Route path="/signup/guide" element={<SignupGuide />} />
                   <Route

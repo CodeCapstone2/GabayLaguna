@@ -108,32 +108,41 @@ const POIs = () => {
   const fetchGuideCounts = async () => {
     const counts = {};
 
+    // Fetch guide count for each POI individually
     try {
-      // First try to get guides by city
-      const response = await fetch(
-        `${API_CONFIG.BASE_URL}/api/cities/${cityId}/guides`
-      );
+      const fetchPromises = pois.map(async (poi) => {
+        try {
+          const response = await fetch(
+            `${API_CONFIG.BASE_URL}/api/pois/${poi.id}/guides`
+          );
 
-      if (response.ok) {
-        const data = await response.json();
-        const cityGuideCount = data.guides
-          ? data.guides.length
-          : data.count || 0;
+          if (response.ok) {
+            const data = await response.json();
+            // Use count from API if available, otherwise count the guides array
+            const count = data.count !== undefined ? data.count : (data.guides || []).length;
+            return { poiId: poi.id, count: count };
+          } else {
+            console.error(`Error fetching guides for POI ${poi.id}:`, response.status);
+            return { poiId: poi.id, count: 0 };
+          }
+        } catch (error) {
+          console.error(`Error fetching guides for POI ${poi.id}:`, error);
+          return { poiId: poi.id, count: 0 };
+        }
+      });
 
-        // Distribute guides evenly among POIs for demo
-        pois.forEach((poi, index) => {
-          // Simple distribution logic - you can improve this later
-          const baseCount = Math.floor(cityGuideCount / pois.length);
-          const remainder = cityGuideCount % pois.length;
-          counts[poi.id] = baseCount + (index < remainder ? 1 : 0);
-        });
-      } else {
-        // If city guides endpoint fails, use fallback
-        throw new Error("City guides endpoint failed");
-      }
+      const results = await Promise.all(fetchPromises);
+      
+      // Build counts object from results
+      results.forEach((result) => {
+        counts[result.poiId] = result.count;
+      });
     } catch (error) {
-      console.error("Error fetching city guides:", error);
-      // No fake data - just set empty counts
+      console.error("Error fetching guide counts:", error);
+      // Set all counts to 0 on error
+      pois.forEach((poi) => {
+        counts[poi.id] = 0;
+      });
     }
 
     setGuideCounts(counts);

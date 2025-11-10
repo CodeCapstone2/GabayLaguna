@@ -390,7 +390,9 @@ const TourGuideProfile = () => {
     }
   };
 
-  const handleAvailabilityChange = async (day, timeSlot, isAvailable) => {
+  const [newTimeRange, setNewTimeRange] = useState({ day: "", start: "", end: "" });
+
+  const handleAvailabilityChange = async (day, startTime, endTime, isAvailable) => {
     try {
       setError("");
       const token = localStorage.getItem("token");
@@ -400,12 +402,6 @@ const TourGuideProfile = () => {
         return;
       }
 
-      const timeMap = {
-        morning: { start: "08:00", end: "12:00" },
-        afternoon: { start: "13:00", end: "17:00" },
-        evening: { start: "18:00", end: "22:00" },
-      };
-
       const res = await fetch(`${API_CONFIG.BASE_URL}/api/guide/availability`, {
         method: "POST",
         headers: {
@@ -414,8 +410,8 @@ const TourGuideProfile = () => {
         },
         body: JSON.stringify({
           day_of_week: day,
-          start_time: timeMap[timeSlot].start,
-          end_time: timeMap[timeSlot].end,
+          start_time: startTime,
+          end_time: endTime,
           is_available: isAvailable,
         }),
       });
@@ -427,8 +423,8 @@ const TourGuideProfile = () => {
             (a) =>
               !(
                 a.day_of_week === day &&
-                a.start_time === timeMap[timeSlot].start &&
-                a.end_time === timeMap[timeSlot].end
+                a.start_time === startTime &&
+                a.end_time === endTime
               )
           );
           return [
@@ -436,6 +432,7 @@ const TourGuideProfile = () => {
             updatedAvailability.availability || updatedAvailability,
           ];
         });
+        setNewTimeRange({ day: "", start: "", end: "" });
       } else if (res.status === 401) {
         handleUnauthorized();
       } else {
@@ -444,6 +441,108 @@ const TourGuideProfile = () => {
       }
     } catch (error) {
       console.error("Error updating availability:", error);
+      setError("Error updating availability: " + error.message);
+    }
+  };
+
+  const handleAddTimeRange = async () => {
+    if (!newTimeRange.day || !newTimeRange.start || !newTimeRange.end) {
+      setError("Please fill in all fields");
+      return;
+    }
+
+    if (newTimeRange.start >= newTimeRange.end) {
+      setError("End time must be after start time");
+      return;
+    }
+
+    await handleAvailabilityChange(
+      newTimeRange.day,
+      newTimeRange.start,
+      newTimeRange.end,
+      true
+    );
+  };
+
+  const handleDeleteAvailability = async (availabilityId) => {
+    try {
+      setError("");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const res = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/availability/${availabilityId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (res.ok) {
+        setAvailability((prev) => prev.filter((a) => a.id !== availabilityId));
+      } else if (res.status === 401) {
+        handleUnauthorized();
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to delete availability");
+      }
+    } catch (error) {
+      console.error("Error deleting availability:", error);
+      setError("Error deleting availability: " + error.message);
+    }
+  };
+
+  const handleToggleAvailability = async (availabilityId, currentStatus) => {
+    try {
+      setError("");
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      const availItem = availability.find((a) => a.id === availabilityId);
+      if (!availItem) return;
+
+      const res = await fetch(
+        `${API_CONFIG.BASE_URL}/api/guide/availability/${availabilityId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            is_available: !currentStatus,
+          }),
+        }
+      );
+
+      if (res.ok) {
+        const updatedAvailability = await res.json();
+        setAvailability((prev) =>
+          prev.map((a) =>
+            a.id === availabilityId
+              ? updatedAvailability.availability || updatedAvailability
+              : a
+          )
+        );
+      } else if (res.status === 401) {
+        handleUnauthorized();
+      } else {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to update availability");
+      }
+    } catch (error) {
+      console.error("Error toggling availability:", error);
       setError("Error updating availability: " + error.message);
     }
   };
@@ -521,23 +620,22 @@ const TourGuideProfile = () => {
 
   const getAvailabilityForDay = (day) => {
     if (!Array.isArray(availability)) return [];
-    return availability.filter((a) => a.day_of_week === day);
+    return availability
+      .filter((a) => a.day_of_week === day)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
   };
 
-  const isTimeSlotAvailable = (day, timeSlot) => {
-    const dayAvailability = getAvailabilityForDay(day);
-    const timeMap = {
-      morning: { start: "08:00", end: "12:00" },
-      afternoon: { start: "13:00", end: "17:00" },
-      evening: { start: "18:00", end: "22:00" },
-    };
-
-    return dayAvailability.some(
-      (a) =>
-        a.start_time === timeMap[timeSlot].start &&
-        a.end_time === timeMap[timeSlot].end &&
-        a.is_available
-    );
+  const formatTime = (timeString) => {
+    if (!timeString) return "";
+    try {
+      const [hours, minutes] = timeString.split(":");
+      const hour = parseInt(hours);
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      return `${displayHour}:${minutes} ${ampm}`;
+    } catch (error) {
+      return timeString;
+    }
   };
 
   if (!user) {
@@ -560,7 +658,6 @@ const TourGuideProfile = () => {
     "saturday",
     "sunday",
   ];
-  const timeSlots = ["morning", "afternoon", "evening"];
 
   return (
     <div className="container py-5">
@@ -885,6 +982,9 @@ const TourGuideProfile = () => {
                 <FaClock className="me-2" />
                 Availability Schedule
               </h5>
+              <small className="text-muted">
+                Set your custom working hours for each day
+              </small>
             </div>
             <div className="card-body">
               {loading ? (
@@ -897,50 +997,169 @@ const TourGuideProfile = () => {
                   <p className="mt-2 text-muted">Loading availability...</p>
                 </div>
               ) : (
-                <div className="table-responsive">
-                  <table className="table table-borderless">
-                    <thead>
-                      <tr>
-                        <th>Day</th>
-                        <th>Morning (8AM-12PM)</th>
-                        <th>Afternoon (1PM-5PM)</th>
-                        <th>Evening (6PM-10PM)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {daysOfWeek.map((day) => (
-                        <tr key={day}>
-                          <td className="fw-semibold text-capitalize">{day}</td>
-                          {timeSlots.map((timeSlot) => (
-                            <td key={timeSlot}>
-                              <button
-                                className={`btn btn-sm ${
-                                  isTimeSlotAvailable(day, timeSlot)
-                                    ? "btn-success"
-                                    : "btn-outline-secondary"
-                                }`}
-                                onClick={() =>
-                                  handleAvailabilityChange(
-                                    day,
-                                    timeSlot,
-                                    !isTimeSlotAvailable(day, timeSlot)
-                                  )
-                                }
-                                disabled={loading}
-                              >
-                                {isTimeSlotAvailable(day, timeSlot) ? (
-                                  <FaCheckCircle />
-                                ) : (
-                                  "—"
-                                )}
-                              </button>
-                            </td>
-                          ))}
+                <>
+                  {/* Add New Time Range */}
+                  <div className="card bg-light mb-4">
+                    <div className="card-body">
+                      <h6 className="card-title mb-3">
+                        <FaPlus className="me-2" />
+                        Add New Time Range
+                      </h6>
+                      <div className="row g-3">
+                        <div className="col-md-4">
+                          <label className="form-label">Day</label>
+                          <select
+                            className="form-select"
+                            value={newTimeRange.day}
+                            onChange={(e) =>
+                              setNewTimeRange({
+                                ...newTimeRange,
+                                day: e.target.value,
+                              })
+                            }
+                          >
+                            <option value="">Select day</option>
+                            {daysOfWeek.map((day) => (
+                              <option key={day} value={day}>
+                                {day.charAt(0).toUpperCase() + day.slice(1)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="col-md-3">
+                          <label className="form-label">Start Time</label>
+                          <input
+                            type="time"
+                            className="form-control"
+                            value={newTimeRange.start}
+                            onChange={(e) =>
+                              setNewTimeRange({
+                                ...newTimeRange,
+                                start: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="col-md-3">
+                          <label className="form-label">End Time</label>
+                          <input
+                            type="time"
+                            className="form-control"
+                            value={newTimeRange.end}
+                            onChange={(e) =>
+                              setNewTimeRange({
+                                ...newTimeRange,
+                                end: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="col-md-2 d-flex align-items-end">
+                          <button
+                            className="btn btn-success w-100"
+                            onClick={handleAddTimeRange}
+                            disabled={loading}
+                          >
+                            <FaPlus className="me-1" />
+                            Add
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Display Availability by Day */}
+                  <div className="table-responsive">
+                    <table className="table table-borderless">
+                      <thead>
+                        <tr>
+                          <th>Day</th>
+                          <th>Time Ranges</th>
+                          <th>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {daysOfWeek.map((day) => {
+                          const dayAvailability = getAvailabilityForDay(day);
+                          return (
+                            <tr key={day}>
+                              <td className="fw-semibold text-capitalize align-middle">
+                                {day.charAt(0).toUpperCase() + day.slice(1)}
+                              </td>
+                              <td>
+                                {dayAvailability.length > 0 ? (
+                                  <div className="d-flex flex-wrap gap-2">
+                                    {dayAvailability.map((avail) => (
+                                      <span
+                                        key={avail.id}
+                                        className={`badge ${
+                                          avail.is_available
+                                            ? "bg-success"
+                                            : "bg-secondary"
+                                        } d-flex align-items-center gap-2`}
+                                        style={{ fontSize: "0.9rem" }}
+                                      >
+                                        {formatTime(avail.start_time)} -{" "}
+                                        {formatTime(avail.end_time)}
+                                        <button
+                                          className="btn btn-sm p-0 text-white"
+                                          style={{
+                                            background: "none",
+                                            border: "none",
+                                            fontSize: "0.8rem",
+                                          }}
+                                          onClick={() =>
+                                            handleToggleAvailability(
+                                              avail.id,
+                                              avail.is_available
+                                            )
+                                          }
+                                          title={
+                                            avail.is_available
+                                              ? "Click to disable"
+                                              : "Click to enable"
+                                          }
+                                        >
+                                          {avail.is_available ? (
+                                            <FaCheckCircle />
+                                          ) : (
+                                            <FaTimes />
+                                          )}
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted">
+                                    No availability set
+                                  </span>
+                                )}
+                              </td>
+                              <td>
+                                {dayAvailability.length > 0 && (
+                                  <div className="d-flex gap-1">
+                                    {dayAvailability.map((avail) => (
+                                      <button
+                                        key={avail.id}
+                                        className="btn btn-sm btn-outline-danger"
+                                        onClick={() =>
+                                          handleDeleteAvailability(avail.id)
+                                        }
+                                        title="Delete this time range"
+                                      >
+                                        <FaTrash />
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>

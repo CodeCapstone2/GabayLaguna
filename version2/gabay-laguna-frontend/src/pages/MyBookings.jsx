@@ -19,6 +19,8 @@ const MyBookings = () => {
   const [showReview, setShowReview] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -72,21 +74,26 @@ const MyBookings = () => {
     }
   };
 
-  const cancelBooking = async (bookingId) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) {
-      return;
-    }
+  const handleCancelClick = (bookingId) => {
+    setBookingToCancel(bookingId);
+    setShowCancelConfirm(true);
+  };
+
+  const cancelBooking = async () => {
+    if (!bookingToCancel) return;
 
     try {
       const token = localStorage.getItem("token");
 
-      await axios.delete(`${API_CONFIG.BASE_URL}/api/bookings/${bookingId}`, {
+      await axios.delete(`${API_CONFIG.BASE_URL}/api/bookings/${bookingToCancel}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           Accept: "application/json",
         },
       });
 
+      setShowCancelConfirm(false);
+      setBookingToCancel(null);
       alert("Booking cancelled successfully!");
       loadBookings();
     } catch (error) {
@@ -188,7 +195,7 @@ const MyBookings = () => {
       if (activeTab === "upcoming") {
         return !isCompleted && bookingInfo.status !== "cancelled" && bookingInfo.status !== "rejected";
       } else if (activeTab === "past") {
-        return isCompleted || bookingInfo.status === "completed";
+        return (isCompleted || bookingInfo.status === "completed") && bookingInfo.status !== "cancelled" && bookingInfo.status !== "rejected";
       } else if (activeTab === "cancelled") {
         return bookingInfo.status === "cancelled" || bookingInfo.status === "rejected";
       }
@@ -275,7 +282,7 @@ const MyBookings = () => {
                 now.setSeconds(0, 0);
                 const start = new Date(bookingInfo.date);
                 const isCompleted = bookingInfo.status === "completed" || start < now;
-                return isCompleted || bookingInfo.status === "completed";
+                return (isCompleted || bookingInfo.status === "completed") && bookingInfo.status !== "cancelled" && bookingInfo.status !== "rejected";
               }).length
             }
             )
@@ -424,7 +431,7 @@ const MyBookings = () => {
                           {bookingInfo.status === "pending" && (
                             <button
                               className="btn btn-outline-danger btn-sm"
-                              onClick={() => cancelBooking(booking.id)}
+                              onClick={() => handleCancelClick(booking.id)}
                             >
                               ❌ Cancel Booking
                             </button>
@@ -938,6 +945,111 @@ const MyBookings = () => {
                 >
                   <i className="fas fa-check me-2"></i>
                   Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Booking Confirmation Modal */}
+      {showCancelConfirm && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          role="dialog"
+          aria-modal="true"
+          onClick={() => {
+            setShowCancelConfirm(false);
+            setBookingToCancel(null);
+          }}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-content"
+              style={{
+                borderRadius: "var(--radius-2xl)",
+                border: "none",
+                boxShadow: "var(--shadow-xl)",
+              }}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  background: "linear-gradient(135deg, #dc3545 0%, #c82333 100%)",
+                  borderRadius: "var(--radius-2xl) var(--radius-2xl) 0 0",
+                  border: "none",
+                }}
+              >
+                <h5 className="modal-title text-white d-flex align-items-center">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  Confirm Cancellation
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setBookingToCancel(null);
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="text-center mb-3">
+                  <i className="fas fa-question-circle fa-3x text-warning mb-3"></i>
+                </div>
+                <h6
+                  className="text-center mb-3"
+                  style={{
+                    color: "var(--color-text)",
+                    fontFamily: "var(--font-family-heading)",
+                    fontWeight: "600",
+                  }}
+                >
+                  Are you sure you want to cancel this booking?
+                </h6>
+                <p
+                  className="text-center mb-0"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
+                  This action cannot be undone. If you cancel within 24 hours of booking, you may be eligible for a refund.
+                </p>
+              </div>
+              <div
+                className="modal-footer"
+                style={{ borderTop: "1px solid var(--color-border)" }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowCancelConfirm(false);
+                    setBookingToCancel(null);
+                  }}
+                  style={{
+                    borderRadius: "var(--radius-lg)",
+                    fontWeight: "600",
+                  }}
+                >
+                  <i className="fas fa-times me-2"></i>
+                  No, Keep Booking
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={cancelBooking}
+                  style={{
+                    background: "linear-gradient(135deg, #dc3545 0%, #c82333 100%)",
+                    border: "none",
+                    borderRadius: "var(--radius-lg)",
+                    fontWeight: "600",
+                  }}
+                >
+                  <i className="fas fa-check me-2"></i>
+                  Yes, Cancel Booking
                 </button>
               </div>
             </div>

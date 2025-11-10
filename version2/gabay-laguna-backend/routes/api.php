@@ -53,6 +53,8 @@ Route::get('/statistics', function () {
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/guide/register', [AuthController::class, 'registerGuide']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::get('/pois/{poi}/guides', [TourGuideController::class, 'getGuidesByPoi']);
 Route::get('/cities/{city}/guides', [TourGuideController::class, 'getGuidesByCity']);
 

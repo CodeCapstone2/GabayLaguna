@@ -245,6 +245,17 @@ const Login = () => {
                     )}
                   </button>
 
+                  {/* Forgot Password Link */}
+                  <div className="text-end mb-3">
+                    <Link
+                      to="/forgot-password"
+                      className="btn btn-link text-decoration-none p-0"
+                      style={{ color: "#667eea", fontSize: "0.9rem" }}
+                    >
+                      Forgot your password?
+                    </Link>
+                  </div>
+
                   {/* Navigation Links */}
                   <div className="text-center">
                     <p className="text-muted mb-3">

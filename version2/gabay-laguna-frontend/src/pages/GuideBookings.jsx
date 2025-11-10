@@ -15,6 +15,8 @@ const GuideBookings = () => {
   const [showLocationUpdater, setShowLocationUpdater] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [bookingToReject, setBookingToReject] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -71,13 +73,16 @@ const GuideBookings = () => {
     }
   };
 
+  const handleRejectClick = (bookingId) => {
+    setBookingToReject(bookingId);
+    setShowRejectConfirm(true);
+  };
+
   const updateBookingStatus = async (bookingId, status) => {
-    // Add confirmation for destructive actions
-    if (status === 'rejected' || status === 'cancelled') {
-      const action = status === 'rejected' ? 'reject' : 'cancel';
-      if (!window.confirm(`Are you sure you want to ${action} this booking? This action cannot be undone.`)) {
-        return;
-      }
+    // If rejecting, show confirmation modal first
+    if (status === 'rejected') {
+      handleRejectClick(bookingId);
+      return;
     }
 
     try {
@@ -124,6 +129,57 @@ const GuideBookings = () => {
         }
       } else if (error.request) {
         // Network error
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      }
+      
+      alert(errorMessage);
+    }
+  };
+
+  const confirmRejectBooking = async () => {
+    if (!bookingToReject) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.put(
+        `${API_CONFIG.BASE_URL}/api/guide/bookings/${bookingToReject}/status`,
+        { status: 'rejected' },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setShowRejectConfirm(false);
+      setBookingToReject(null);
+      alert("Booking rejected successfully!");
+      loadBookings();
+    } catch (error) {
+      console.error("Error rejecting booking:", error);
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to reject booking. Please try again.";
+      
+      if (error.response) {
+        const statusCode = error.response.status;
+        const responseData = error.response.data;
+        
+        if (statusCode === 422) {
+          errorMessage = responseData.message || "Invalid booking status. Please try again.";
+        } else if (statusCode === 404) {
+          errorMessage = "Booking not found. It may have been deleted.";
+        } else if (statusCode === 403) {
+          errorMessage = "You don't have permission to update this booking.";
+        } else if (statusCode === 401) {
+          errorMessage = "Please log in again to continue.";
+        } else {
+          errorMessage = responseData.message || `Server error (${statusCode}). Please try again.`;
+        }
+      } else if (error.request) {
         errorMessage = "Network error. Please check your internet connection and try again.";
       }
       
@@ -439,9 +495,7 @@ const GuideBookings = () => {
                               </button>
                               <button
                                 className="btn btn-danger btn-sm"
-                                onClick={() =>
-                                  updateBookingStatus(booking.id, "rejected")
-                                }
+                                onClick={() => handleRejectClick(booking.id)}
                               >
                                 ❌ Reject Booking
                               </button>
@@ -992,6 +1046,111 @@ const GuideBookings = () => {
                 >
                   <i className="fas fa-check me-2"></i>
                   Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Booking Confirmation Modal */}
+      {showRejectConfirm && (
+        <div
+          className="modal fade show"
+          style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          role="dialog"
+          aria-modal="true"
+          onClick={() => {
+            setShowRejectConfirm(false);
+            setBookingToReject(null);
+          }}
+        >
+          <div
+            className="modal-dialog modal-dialog-centered"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-content"
+              style={{
+                borderRadius: "var(--radius-2xl)",
+                border: "none",
+                boxShadow: "var(--shadow-xl)",
+              }}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  background: "linear-gradient(135deg, #dc3545 0%, #c82333 100%)",
+                  borderRadius: "var(--radius-2xl) var(--radius-2xl) 0 0",
+                  border: "none",
+                }}
+              >
+                <h5 className="modal-title text-white d-flex align-items-center">
+                  <i className="fas fa-exclamation-triangle me-2"></i>
+                  Confirm Rejection
+                </h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => {
+                    setShowRejectConfirm(false);
+                    setBookingToReject(null);
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="text-center mb-3">
+                  <i className="fas fa-question-circle fa-3x text-warning mb-3"></i>
+                </div>
+                <h6
+                  className="text-center mb-3"
+                  style={{
+                    color: "var(--color-text)",
+                    fontFamily: "var(--font-family-heading)",
+                    fontWeight: "600",
+                  }}
+                >
+                  Are you sure you want to reject this booking?
+                </h6>
+                <p
+                  className="text-center mb-0"
+                  style={{ color: "var(--color-text-secondary)" }}
+                >
+                  This action cannot be undone. The tourist will be notified of your rejection.
+                </p>
+              </div>
+              <div
+                className="modal-footer"
+                style={{ borderTop: "1px solid var(--color-border)" }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowRejectConfirm(false);
+                    setBookingToReject(null);
+                  }}
+                  style={{
+                    borderRadius: "var(--radius-lg)",
+                    fontWeight: "600",
+                  }}
+                >
+                  <i className="fas fa-times me-2"></i>
+                  No, Keep Booking
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={confirmRejectBooking}
+                  style={{
+                    background: "linear-gradient(135deg, #dc3545 0%, #c82333 100%)",
+                    border: "none",
+                    borderRadius: "var(--radius-lg)",
+                    fontWeight: "600",
+                  }}
+                >
+                  <i className="fas fa-check me-2"></i>
+                  Yes, Reject Booking
                 </button>
               </div>
             </div>

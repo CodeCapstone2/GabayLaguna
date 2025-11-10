@@ -94,14 +94,35 @@ class BookingController extends Controller
             'total_amount' => $totalAmount,
         ]);
 
-        // Notify guide of new booking request
+        // Load relationships needed for email notification
+        $booking->load(['tourist', 'tourGuide.user', 'pointOfInterest']);
+
+        // Send email notifications to both tourist and guide
         try {
-            app(\App\Services\NotificationService::class)->sendBookingConfirmation($booking);
+            $notificationService = app(\App\Services\NotificationService::class);
+            $emailSent = $notificationService->sendBookingConfirmation($booking);
+            
+            if ($emailSent) {
+                \Log::info('Booking confirmation emails sent successfully', [
+                    'booking_id' => $booking->id,
+                    'tourist_email' => $booking->tourist->email,
+                    'guide_email' => $booking->tourGuide->user->email,
+                ]);
+            } else {
+                \Log::warning('Booking confirmation emails failed to send', [
+                    'booking_id' => $booking->id,
+                    'tourist_email' => $booking->tourist->email ?? 'N/A',
+                    'guide_email' => $booking->tourGuide->user->email ?? 'N/A',
+                ]);
+            }
         } catch (\Exception $e) {
-            // Log and continue without failing booking creation
-            \Log::warning('Booking created but notification failed', [
+            // Log detailed error but don't fail booking creation
+            \Log::error('Booking created but email notification failed', [
                 'booking_id' => $booking->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'tourist_email' => $booking->tourist->email ?? 'N/A',
+                'guide_email' => $booking->tourGuide->user->email ?? 'N/A',
             ]);
         }
 
@@ -185,10 +206,79 @@ class BookingController extends Controller
             ], 422);
         }
 
+        $oldStatus = $booking->status;
+        
+        // Load relationships needed for notifications
+        $booking->load(['tourist', 'tourGuide.user', 'pointOfInterest', 'payment']);
+        
         $booking->update(['status' => 'cancelled']);
 
+        // Check if cancellation is within 24 hours of booking creation
+        $bookingCreatedAt = $booking->created_at;
+        $hoursSinceBooking = now()->diffInHours($bookingCreatedAt);
+        $isWithin24Hours = $hoursSinceBooking <= 24;
+
+        $refundProcessed = false;
+        $refundMessage = '';
+
+        // Process refund if within 24 hours and payment exists
+        if ($isWithin24Hours && $booking->payment && $booking->payment->status === 'completed') {
+            try {
+                $paymentService = app(\App\Services\PaymentService::class);
+                $refundResult = $paymentService->refundPayment($booking->payment);
+
+                if ($refundResult['success']) {
+                    $refundProcessed = true;
+                    $refundMessage = 'Your payment has been refunded successfully.';
+
+                    // Send refund notification
+                    try {
+                        app(\App\Services\NotificationService::class)->sendRefundNotification($booking->payment, $refundResult);
+                    } catch (\Exception $e) {
+                        \Log::warning('Refund processed but notification failed', [
+                            'payment_id' => $booking->payment->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                } else {
+                    $refundMessage = 'Refund could not be processed automatically. Please contact support.';
+                    \Log::error('Refund processing failed', [
+                        'payment_id' => $booking->payment->id,
+                        'error' => $refundResult['error'] ?? 'Unknown error',
+                    ]);
+                }
+            } catch (\Exception $e) {
+                $refundMessage = 'Refund could not be processed automatically. Please contact support.';
+                \Log::error('Refund processing exception', [
+                    'payment_id' => $booking->payment->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } elseif ($booking->payment && $booking->payment->status === 'completed') {
+            // Payment exists but outside 24-hour window
+            $refundMessage = 'Cancellation is outside the 24-hour refund window. No refund will be issued.';
+        }
+
+        // Send notification about cancellation to both tourist and guide
+        try {
+            app(\App\Services\NotificationService::class)->sendBookingStatusUpdate($booking, $oldStatus, 'cancelled');
+        } catch (\Exception $e) {
+            \Log::warning('Booking cancelled but notification failed', [
+                'booking_id' => $booking->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $responseMessage = 'Booking cancelled successfully.';
+        if ($refundMessage) {
+            $responseMessage .= ' ' . $refundMessage;
+        }
+
         return response()->json([
-            'message' => 'Booking cancelled successfully'
+            'message' => $responseMessage,
+            'refund_processed' => $refundProcessed,
+            'refund_message' => $refundMessage,
+            'cancelled_within_24_hours' => $isWithin24Hours,
         ]);
     }
 
@@ -256,10 +346,37 @@ class BookingController extends Controller
             ], 422);
         }
 
+        // Check if guide is trying to confirm the booking
+        if ($request->status === 'confirmed') {
+            // Load payment relationship
+            $booking->load('payment');
+            
+            // Check if payment exists
+            if (!$booking->payment) {
+                return response()->json([
+                    'message' => 'Cannot confirm booking. Payment has not been made yet.',
+                    'error' => 'payment_required'
+                ], 422);
+            }
+
+            // Check if payment is completed
+            if ($booking->payment->status !== 'completed') {
+                return response()->json([
+                    'message' => 'Cannot confirm booking. Payment is not completed yet. Current payment status: ' . $booking->payment->status,
+                    'error' => 'payment_not_completed',
+                    'payment_status' => $booking->payment->status
+                ], 422);
+            }
+        }
+
         $oldStatus = $booking->status;
+        
+        // Load relationships needed for notifications
+        $booking->load(['tourist', 'tourGuide.user', 'pointOfInterest', 'payment']);
+        
         $booking->update(['status' => $request->status]);
 
-        // Send notification about status update
+        // Send notification about status update to both tourist and guide
         try {
             app(\App\Services\NotificationService::class)->sendBookingStatusUpdate($booking, $oldStatus, $request->status);
         } catch (\Exception $e) {

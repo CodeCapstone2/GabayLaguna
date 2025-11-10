@@ -551,39 +551,44 @@ class TourGuideController extends Controller
     }
 
     public function getGuidesByPoi(Request $request, $poiId)
-{
-    $validator = Validator::make(['poi_id' => $poiId], [
-        'poi_id' => 'required|exists:points_of_interest,id'
-    ]);
+    {
+        $validator = Validator::make(['poi_id' => $poiId], [
+            'poi_id' => 'required|exists:points_of_interest,id'
+        ]);
 
-    if ($validator->fails()) {
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Get guides who have applied and been approved for this POI or the POI's city
+        $poi = PointOfInterest::with('city')->findOrFail($poiId);
+        
+        // Get guides with approved applications for this specific POI or for the entire city
+        $guides = TourGuide::verified()
+            ->available()
+            ->whereHas('locationApplications', function ($query) use ($poi) {
+                $query->where('city_id', $poi->city_id)
+                      ->where('status', 'approved')
+                      ->where(function ($q) use ($poi) {
+                          // Include guides approved for this specific POI
+                          $q->where('poi_id', $poi->id)
+                            // OR guides approved for the entire city (poi_id is null means "All POIs")
+                            ->orWhereNull('poi_id');
+                      });
+            })
+            ->with(['user', 'categories', 'reviews'])
+            ->distinct() // Ensure no duplicates if guide has multiple matching applications
+            ->get();
+
         return response()->json([
-            'message' => 'Validation failed',
-            'errors' => $validator->errors()
-        ], 422);
+            'guides' => $guides,
+            'count' => $guides->count(), // Include count for easier frontend use
+            'poi' => $poi
+        ]);
     }
-
-    // Get guides who have applied and been approved for this POI's city
-    $poi = PointOfInterest::with('city')->findOrFail($poiId);
-    
-    $guides = TourGuide::verified()
-        ->available()
-        ->whereHas('locationApplications', function ($query) use ($poi) {
-            $query->where('city_id', $poi->city_id)
-                  ->where('status', 'approved')
-                  ->where(function ($q) use ($poi) {
-                      $q->where('poi_id', $poi->id)
-                        ->orWhereNull('poi_id'); // Guides approved for the entire city
-                  });
-        })
-        ->with(['user', 'categories', 'reviews'])
-        ->get();
-
-    return response()->json([
-        'guides' => $guides,
-        'poi' => $poi
-    ]);
-}
 
 /**
  * Get guides available for a specific city

@@ -155,6 +155,16 @@ class PaymentService
                         // Update booking status
                         $payment->booking->update(['status' => 'confirmed']);
 
+                        // Send payment confirmation notifications
+                        try {
+                            app(\App\Services\NotificationService::class)->sendPaymentConfirmation($payment);
+                        } catch (\Exception $e) {
+                            Log::warning('Payment captured but notification failed', [
+                                'payment_id' => $payment->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+
                         return [
                             'success' => true,
                             'payment' => $payment,
@@ -288,6 +298,16 @@ class PaymentService
 
                     // Update booking status
                     $payment->booking->update(['status' => 'confirmed']);
+
+                    // Send payment confirmation notifications
+                    try {
+                        app(\App\Services\NotificationService::class)->sendPaymentConfirmation($payment);
+                    } catch (\Exception $e) {
+                        Log::warning('PayMongo payment processed but notification failed', [
+                            'payment_id' => $payment->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
 
                     return true;
                 }
@@ -518,6 +538,16 @@ class PaymentService
                     // Update booking status
                     $payment->booking->update(['status' => 'confirmed']);
 
+                    // Send payment confirmation notifications
+                    try {
+                        app(\App\Services\NotificationService::class)->sendPaymentConfirmation($payment);
+                    } catch (\Exception $e) {
+                        Log::warning('Xendit payment processed but notification failed', [
+                            'payment_id' => $payment->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+
                     return true;
                 }
             } elseif ($event === 'virtual_account.paid') {
@@ -538,6 +568,16 @@ class PaymentService
 
                     // Update booking status
                     $payment->booking->update(['status' => 'confirmed']);
+
+                    // Send payment confirmation notifications
+                    try {
+                        app(\App\Services\NotificationService::class)->sendPaymentConfirmation($payment);
+                    } catch (\Exception $e) {
+                        Log::warning('Xendit virtual account payment processed but notification failed', [
+                            'payment_id' => $payment->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
 
                     return true;
                 }
